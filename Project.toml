@@ -2,3 +2,6 @@ name = "STOPIT"
 uuid = "4b3cb735-ef26-417f-abc0-9c0f0e552892"
 authors = ["wvonseeg <116127888+wvonseeg@users.noreply.github.com>"]
 version = "0.1.0"
+
+[deps]
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
