@@ -26,11 +26,16 @@ mutable struct GasSandwich
 
 end
 
-function setabs(INW, A, Z, AN, TH, DN)
+mutable struct Sandwich
+
+end
+
+function setabs!(sandwich::Sandwich, A, Z, AN, thickness::Float64, density::Float64)
     # 	SUBROUTINE FOR SETTING UP COMPOSITE ABSORBER
     # 	DATA (PARTIAL DENSITIES AND THICKNESSES)
 
     #	DIMENSION A(4),Z(4),AN(4),T(4),D(4)
+    
     AW = 0.0
 
     for i = 1:INW
@@ -42,7 +47,7 @@ function setabs(INW, A, Z, AN, TH, DN)
     AN ./ AW
 end
 
-function setabg(INW, A, Z, AN, CN, TH, DN, PR, XL)
+function setabg!(sandwich::Sandwich, INW, A, Z, AN, CN, TH, DN, PR, XL)
     # 	SUBROUTINE FOR SETTING UP COMPOSITE ABSORBER DATA
     # 	FOR GASEOUS LAYERS.
 
