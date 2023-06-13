@@ -18,11 +18,11 @@ function CompositeAbsorber(A::Vector{Real}, Z::Vector{Integer}, num::Vector{Real
     CompositeAbsorber(tuple(A), tuple(Z), tuple(num), thickness, tuple(Tout), density, tuple(Dout))
 end
 
-struct SolidSandwich
+mutable struct SolidSandwich
 
 end
 
-struct GasSandwich
+mutable struct GasSandwich
 
 end
 
