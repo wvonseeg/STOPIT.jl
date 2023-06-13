@@ -385,18 +385,18 @@ function desorb(ianz, zp, ap, ep, loste)
     #  should save time in calulating energies of particles stopped
     #  in the dead layer
     if I <= ianzi
-        emintabz(izp) = ep
+        emintabz[izp] = ep
     end
 
     #  evalue = energy of particle when entering sensitive volume of det.
     #           when particle is stopped (ipunch=1) this is what is left
     #           once you take off the energy lost in the dead layer.
-    evalue = E(ianzi)
+    evalue = E[ianzi]
     #         = when particle punches thouough detector its energy at the
     #           end is EI - subtract this from what it entered with (after
     #           dead layers) and again you got the energy deposited.
     if ipunch == 2
-        evalue = E(ianzi) - EI >= 0.0 ? E(ianzi) - EI : 0.0
+        evalue = E[ianzi] - EI >= 0.0 ? E[ianzi] - EI : 0.0
         #      roundoff errors could resutl in negative energies !!
     end
 
@@ -407,11 +407,11 @@ function desorb(ianz, zp, ap, ep, loste)
     indexe = Int((ep + 0.001) / detable) + 1
     indexz = Int(zp - zth + 0.001)
     if iopt == 5
-        eptable(indexz, indexe, ipunch) = evalue
+        eptable[indexz, indexe, ipunch] = evalue
     end
     if iopt == 6
         ipunch = 1
-        eptable(indexz, indexe, ipunch) = -DE(ianzide)
+        eptable[indexz, indexe, ipunch] = -DE[ianzide]
     end
 
     #	now repeat calculation for same Z but new energy
@@ -809,7 +809,7 @@ function ads(I1, SIGN, XN1, EPS, A, Z, E, ISTAT)
             DDR = DDD / DDS
             if DDR > EPS
                 N1 = N1 * 2
-                XN1 = FLOAT(N1)
+                XN1 = float(N1)
                 # GO TO 1000
             end
         end
