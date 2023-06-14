@@ -1,6 +1,18 @@
-export AbsorberLayer, GasAbsorber, Sandwich, setlayer!
+export AbstractAbsorber, SolidAbsorber, GasAbsorber, Sandwich, setlayer!, removelayer!
 
-struct AbsorberLayer
+"""
+Abstract type for absorber layers.
+"""
+abstract type AbstractAbsorber end
+
+"""
+Subtype of AbstractAbsorber for solid absorber layers.
+
+The units of fields are as follows:
+* Thicnkess => mg cm^-2
+* Density   => g cm^-3
+"""
+struct SolidAbsorber <: AbstractAbsorber
     A::Tuple{Float64}
     Z::Tuple{Integer}
     num::Tuple{Integer}
@@ -10,7 +22,7 @@ struct AbsorberLayer
     partialdensity::Tuple{Float64}
 end
 
-function AbsorberLayer(A::Vector{Real}, Z::Vector{Integer}, num::Vector{Real}, thickness::Float64, density::Float64)
+function SolidAbsorber(A::Vector{Float64}, Z::Vector{Integer}, num::Vector{Float64}, thickness::Float64, density::Float64)
     # Check arguments
     # For now only allow up to 4 elements in composite absorber
     # This number is taken as legacy from FROTRAN code and may be modified later
@@ -30,10 +42,19 @@ function AbsorberLayer(A::Vector{Real}, Z::Vector{Integer}, num::Vector{Real}, t
     end
 
     ANout ./= sum(ANout)
-    AbsorberLayer(tuple(A), tuple(Z), tuple(ANout), thickness, tuple(Tout), density, tuple(Dout))
+    SolidAbsorber(tuple(A), tuple(Z), tuple(ANout), thickness, tuple(Tout), density, tuple(Dout))
 end
 
-struct GasAbsorber <: AbsorberLayer
+"""
+Subtype of AbstractAbsorber for gaseous absorber layers.
+
+The units of fields are as follows:
+* Thickness => mg cm^-2
+* Density   => g cm^-3
+* Pressure  => Torr
+* Depth     => cm
+"""
+struct GasAbsorber <: AbstractAbsorber
     A::Tuple{Float64}
     Z::Tuple{Integer}
     num::Tuple{Integer}
@@ -46,7 +67,7 @@ struct GasAbsorber <: AbsorberLayer
     depth::Float64
 end
 
-function GasAbsorber(A::Vector{Real}, Z::Vector{Integer}, num::Vector{Real}, concentrations::Vector{Real}, pressure::Float64, depth::Float64)
+function GasAbsorber(A::Vector{Float64}, Z::Vector{Integer}, num::Vector{Integer}, concentrations::Vector{Float64}, pressure::Float64, depth::Float64)
     # Check arguments
     # For now only allow up to 4 elements in composite absorber
     # This number is taken as legacy from FROTRAN code and may be modified later
@@ -77,29 +98,29 @@ function GasAbsorber(A::Vector{Real}, Z::Vector{Integer}, num::Vector{Real}, con
     GasAbsorber(tuple(A), tuple(Z), tuple(num), thickness, tuple(thick), density, tuple(dens), tuple(concentrations), pressure, depth)
 end
 
-function GasAbsorber(A::Vector{Real}, Z::Vector{Integer}, num::Vector{Real}, pressure::Float64, depth::Float64)
+function GasAbsorber(A::Vector{Float64}, Z::Vector{Integer}, num::Vector{Integer}, pressure::Float64, depth::Float64)
     concentrations = ones(length(A))
     GasAbsorber(A, Z, num, concentrations, pressure, depth)
 end
 
 mutable struct Sandwich
-    layers::Vector{AbsorberLayer}
+    layers::Vector{AbstractAbsorber}
 end
 
-function setlayer!(sandwich::Sandwich, A::Vector{Real}, Z::Vector{Integer}, AN::Vector{Integer}, thickness::Float64, density::Float64)
+function setlayer!(sandwich::Sandwich, A::Vector{Float64}, Z::Vector{Integer}, AN::Vector{Integer}, thickness::Float64, density::Float64)
     @argcheck length(sandwich.layers) < 19
-    push!(sandwich.layers, AbsorberLayer(A, Z, AN, thickness, density))
+    push!(sandwich.layers, SolidAbsorber(A, Z, AN, thickness, density))
     return sandwich
 end
 
-function setlayer!(sandwich::Sandwich, index::Integer, A::Vector{Real}, Z::Vector{Integer}, AN::Vector{Integer}, thickness::Float64, density::Float64)
+function setlayer!(sandwich::Sandwich, index::Integer, A::Vector{Float64}, Z::Vector{Integer}, AN::Vector{Integer}, thickness::Float64, density::Float64)
     @argcheck length(sandwich.layers) < 19
     @argcheck 0 < index <= length(sandwich.layers) + 1
-    insert!(sandwich.layers, index, AbsorberLayer(A, Z, AN, thickness, density))
+    insert!(sandwich.layers, index, SolidAbsorber(A, Z, AN, thickness, density))
     return sandwich
 end
 
-function setlayer!(sandwich::Sandwich, A::Vector{Real}, Z::Vector{Integer}, AN::Vector{Integer}, CN::Vector{Real}, pressure::Float64, depth::Float64)
+function setlayer!(sandwich::Sandwich, A::Vector{Float64}, Z::Vector{Integer}, AN::Vector{Integer}, CN::Vector{Float64}, pressure::Float64, depth::Float64)
     @argcheck length(sandwich.layers) < 19
     push!(sandwich.layers, GasAbsorber(A, Z, AN, CN, pressure, depth))
     return sandwich
