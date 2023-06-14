@@ -77,6 +77,11 @@ function GasAbsorber(A::Vector{Real}, Z::Vector{Integer}, num::Vector{Real}, con
     GasAbsorber(tuple(A), tuple(Z), tuple(num), thickness, tuple(thick), density, tuple(dens), tuple(concentrations), pressure, depth)
 end
 
+function GasAbsorber(A::Vector{Real}, Z::Vector{Integer}, num::Vector{Real}, pressure::Float64, depth::Float64)
+    concentrations = ones(length(A))
+    GasAbsorber(A, Z, num, concentrations, pressure, depth)
+end
+
 mutable struct Sandwich
     layers::Vector{AbsorberLayer}
 end
