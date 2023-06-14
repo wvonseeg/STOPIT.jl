@@ -16,10 +16,10 @@ struct SolidAbsorber <: AbstractAbsorber
     A::Tuple{Float64}
     Z::Tuple{Integer}
     num::Tuple{Integer}
-    thickness::Float64
-    partialthickness::Tuple{Float64}
-    density::Float64
-    partialdensity::Tuple{Float64}
+    thickness::typeof(1u"mg/cm^2")
+    partialthickness::Tuple{typeof(1u"mg/cm^2")}
+    density::typeof(1u"g/cm^3")
+    partialdensity::Tuple{typeof(1u"g/cm^3")}
 end
 
 function SolidAbsorber(A::Vector{Float64}, Z::Vector{Integer}, num::Vector{Float64}, thickness::Float64, density::Float64)
@@ -32,17 +32,17 @@ function SolidAbsorber(A::Vector{Float64}, Z::Vector{Integer}, num::Vector{Float
 
     len = length(A)
     ANout = zeros(len)
-    Tout = zeros(len)
-    Dout = zeros(len)
+    Tout = zeros(typeof(1u"mg/cm^2"), len)
+    Dout = zeros(typeof(1u"g/cm^3"), len)
 
     for i = 1:len
         ANout[i] = A[i] * num[i]
-        Tout[i] = thickness * num[i]
-        Dout[i] = density * num[i]
+        Tout[i] = thickness * num[i] * 1u"mg/cm^2"
+        Dout[i] = density * num[i] * 1u"g/cm^2"
     end
 
     ANout ./= sum(ANout)
-    SolidAbsorber(tuple(A), tuple(Z), tuple(ANout), thickness, tuple(Tout), density, tuple(Dout))
+    SolidAbsorber(tuple(A), tuple(Z), tuple(ANout), thickness * 1u"mg/cm^2", tuple(Tout), density * 1u"g/cm^3", tuple(Dout))
 end
 
 """
@@ -58,13 +58,13 @@ struct GasAbsorber <: AbstractAbsorber
     A::Tuple{Float64}
     Z::Tuple{Integer}
     num::Tuple{Integer}
-    thickness::Float64
-    partialthickness::Tuple{Float64}
-    density::Float64
-    partialdensity::Tuple{Float64}
+    thickness::typeof(1u"mg/cm^2")
+    partialthickness::Tuple{typeof(1u"mg/cm^2")}
+    density::typeof(1u"g/cm^3")
+    partialdensity::Tuple{typeof(1u"g/cm^3")}
     concentrations::Tuple{Float64}
-    pressure::Float64
-    depth::Float64
+    pressure::typeof(1u"Torr")
+    depth::typeof(1u"cm")
 end
 
 function GasAbsorber(A::Vector{Float64}, Z::Vector{Integer}, num::Vector{Integer}, concentrations::Vector{Float64}, pressure::Float64, depth::Float64)
@@ -77,25 +77,25 @@ function GasAbsorber(A::Vector{Float64}, Z::Vector{Integer}, num::Vector{Integer
     @argcheck length(concentrations) == length(num)
 
     len = length(A)
-    thick = zeros(len)
-    dens = zeros(len)
+    thick = zeros(typeof(1u"mg/cm^2"), len)
+    dens = zeros(typeof(1u"g/cm^3"), len)
 
-    P = PR / 760.0
-    X = XL / 22.4
+    P = pressure / 760.0
+    X = depth / 22.4
 
     # AWW = 0.0
     # AW = 0.0
-    thickness = 0.0
-    density = 0.0
-    for i = 1:INW
+    thickness = 0.0u"mg/cm^2"
+    density = 0.0u"g/cm^3"
+    for i = 1:len
         # AW += A[i] * AN[i]
         # AWW += A[i] * AN[i] * CN[i]
-        thick[i] = P * X * A[i] * AN[i] * CN[i]
+        thick[i] = P * X * A[i] * num[i] * concentrations[i] * 1u"mg/cm^2"
         thickness += thick[i]
-        dens[i] = thick[i] / XL
+        dens[i] = thick[i] / depth * 1u"g/cm^3"
         density += dens[i]
     end
-    GasAbsorber(tuple(A), tuple(Z), tuple(num), thickness, tuple(thick), density, tuple(dens), tuple(concentrations), pressure, depth)
+    GasAbsorber(tuple(A), tuple(Z), tuple(num), thickness, tuple(thick), density, tuple(dens), tuple(concentrations), pressure * 1u"Torr", depth * 1u"cm")
 end
 
 function GasAbsorber(A::Vector{Float64}, Z::Vector{Integer}, num::Vector{Integer}, pressure::Float64, depth::Float64)
