@@ -1,7 +1,9 @@
+export desorb!
 
 include("absorbers.jl")
+include("standardmedia.jl")
 
-function desorb(ianz, zp, ap, ep, loste)
+function desorb!(ianz, zp, ap, ep, loste)
 
     # **  CALCULATES ENERGY LOSS IN AN ABSORBER SANDWICH *******
     # ****  ENERGY DEPOSIT IN SECTIONS OF IONIZATION  **********
@@ -82,9 +84,7 @@ function desorb(ianz, zp, ap, ep, loste)
     #	DSEP = DSEP0
     #	isold = isold0
     #
-    if iopt < 0
-        return
-    end
+    @argcheck 0 < iopt <= 6
 
 
     # ***********************************************************
@@ -657,7 +657,7 @@ function desorb(ianz, zp, ap, ep, loste)
     return
 end
 
-function dedx(layer <: AbsorberLayer, stopee::Particle)
+function dedx(layer::T, stopee::Particle) where {T<:AbstractAbsorber}
     DEDXTO = 0.0
     vel = velocity(stopee)
     for i in 1:length(layer.A)
@@ -692,7 +692,7 @@ function dedx(layer <: AbsorberLayer, stopee::Particle)
     return DEDXTO
 end
 
-function _Y(XI::Float64, index::Integer, layer::AbsorberLayer)
+function _Y(XI::Float64, index::Integer, layer::SolidAbsorber)
     FY = 54721.0 * (1.35 - exp(-0.13 + 0.0014 * layer.Z[index]))
     FG = 1.3 / (1 + exp(3.0 - layer.Z[index] / 5.0))
 
@@ -811,10 +811,6 @@ function ads(I1, SIGN, XN1, EPS, A, Z, E, ISTAT)
     ISTAT = 0
     DEE = EH - E
     return DEE
-end
-
-function vel(ENER, A1)
-    return sqrt(2.13E-3 * ENER / A1)
 end
 
 function velocity(part::Particle)
