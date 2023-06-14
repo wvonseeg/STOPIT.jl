@@ -246,7 +246,8 @@ function desorb(ianz, zp, ap, ep, loste)
         PRSW = PRS[i]
         THKW = THK[i]
         if ISG[i] != 1
-            setabs(INNW, ANUMBW, ZNUMBW, ELNUMW, THKW, DENW)
+            #setabs(INNW, ANUMBW, ZNUMBW, ELNUMW, THKW, DENW)
+            setlayer!(sandwich, ANUMBW, ZNUMBW, ELNUMW, THKW, DENW)
             for j = 1:INNW
                 PRDEN[i, j] = PRDENW[j]
                 PRTHK[i, j] = PRTHKW[j]
@@ -656,78 +657,71 @@ function desorb(ianz, zp, ap, ep, loste)
     return
 end
 
-function dedx(Z1::Integer, A1::Float64, Z2::Integer, A2::Float64, rho::Float64, energy::Float64, velocity::Float64, isgas::Bool)
-    XI = (velocity^2) / Z2
+function dedx(layer <: AbsorberLayer, stopee::Particle)
+    DEDXTO = 0.0
+    vel = velocity(stopee)
+    for i in 1:length(layer.A)
+        XI = vel^2 / 2
 
-    FY = 54721.0 * (1.35 - exp(-0.13 + 0.0014 * Z2))
-    FG = 1.3 / (1 + exp(3.0 - Z2 / 5.0))
-    if isgas
-        FY = 54721.0 * (1 + 0.0515 * sqrt(A2 / rho) - exp(-0.23 * Z2))
-        FG = 1.2E-4 * Z2^2 + 2.49E-2 * A2 / rho
-    end
+        # ENERGY LOSS OF HEAVY IONS
+        # EFFECTIVE CHARGE
+        # ELECTRONIC ENERGY LOSS DEDXHI
+        DEDXHI = layer.Z[i] * _Y(XI, i, layer) / (A2 * vel^2)
 
-    G1 = _G1(Z2)
-    G2 = _G2(Z2)
-    G3 = _G3(Z2)
-    G4 = _G4(Z2)
-    G5 = _G5(Z2)
-    HZ2 = (9.0 - (G1 + G2 + G3 + G4 + G5)) * 1.32e-5
+        AZ1 = log(1.035 - 0.4 * exp(-0.16 * stopee.Z))
 
-    # MULTIPLICATION FACTORS OF G(XI)
-    ALEFG = log(2.7E-5 / FG)
-
-    GXI = 0
-    if (XI >= 1.E-9 && XI <= 5.E-4)
-        C = 2 / Z2 * sqrt(XI) / (1 + 1.E4 * sqrt(XI))
-        if isgas
-            C /= 2
+        if stopee.Z > 2
+            FV = vel < 0.62 ? 1 - exp(-137.0 * vel) : 1.0
+            DEDXHI *= (stopee.Z * (1 - exp(FV * AZ1 - 0.879 * VV0 / (Z1^(0.65)))))^2
+        elseif VZ1 > -85.2
+            DEDXHI *= (stopee.Z * (1 - exp(VZ1)))^2
+        else
+            DEDXHI *= stopee.Z^2
         end
-        FG0 = 1 / (1 + (XI * 10000)^3)
-        AL = log(XI) - ALEFG
-        GXI = (C - HZ2 * AL * exp(-0.32 * AL^2)) * FG0
+
+        # NUCLEAR ENERGY LOSS DEDXNU
+        ZA = sqrt(stopee.Z^(2 / 3) + layer.Z[i]^(2 / 3))
+        ϵ = 3.25E4 * layer.A[i] * stopee.energy / (stopee.Z * layer.Z[i] * (stopee.A + layer.A[i]) * ZA)
+        Σ = 1.7 * sqrt(ϵ) * log(ϵ + 2.1718282) / (1 + 6.8 * ϵ + 3.4 * ϵ^1.5)
+        DEDXNU = Σ * 5.105 * stopee.Z * layer.Z[i] * stopee.A / (ZA * layer.A[i] * (stopee.A + layer.A[i]))
+
+        # TOTAL ENERGY LOSS DEDXTO
+
+        DEDXTO += DEDXHI + DEDXNU
     end
+    return DEDXTO
+end
+
+function _Y(XI::Float64, index::Integer, layer::AbsorberLayer)
+    FY = 54721.0 * (1.35 - exp(-0.13 + 0.0014 * layer.Z[index]))
+    FG = 1.3 / (1 + exp(3.0 - layer.Z[index] / 5.0))
+
+    HZ2 = 1.32e-5 * (9.0 - (_G1(layer.Z[index]) + _G2(layer.Z[index]) + _G3(layer.Z[index]) + _G4(layer.Z[index]) + _G5(layer.Z[index])))
 
     # CALCULATION OF Y(XI)
-    Y = 3.3E-4 * log(1 + XI * FY) + GXI
+    Y = 3.3E-4 * log(1 + XI * FY)
 
-    # ENERGY LOSS OF HEAVY IONS
-    # EFFECTIVE CHARGE
-    VV0 = velocity * 137.0
-    FV = 1
-    if (velocity < 0.62)
-        FV = 1 - exp(-VV0)
+    if 1.E-9 <= XI <= 5.E-4
+        C = 2 * sqrt(XI) / (layer.Z[i] * (1 + 1.E4 * sqrt(XI)))
+        AL = log(XI * FG / 2.7E-5)
+        Y += (C - HZ2 * AL * exp(-0.32 * AL^2)) / (1 + (XI * 1E4)^3)
     end
-    AZ1 = log(1.035 - 0.4 * exp(-0.16 * Z1))
+end
 
-    QQ = velocity / (Z1^(0.509))
-    GHI = Z1
-    VZ1 = (-116.79 - 3350.4 * QQ) * QQ
-    if (VZ1 > -85.2)
-        GHI = Z1 * (1 - exp(VZ1))
+function _Y(XI::Float64, index::Integer, layer::GasAbsorber)
+    FY = 54721.0 * (1 + 0.0515 * sqrt(layer.A[index] / layer.partialdensity[index]) - exp(-0.23 * Z2))
+    FG = 1.2E-4 * layer.Z[index]^2 + 2.49E-2 * layer.A[index] / layer.partialdensity[index]
+
+    HZ2 = 1.32e-5 * (9.0 - (_G1(layer.Z[index]) + _G2(layer.Z[index]) + _G3(layer.Z[index]) + _G4(layer.Z[index]) + _G5(layer.Z[index])))
+
+    # CALCULATION OF Y(XI)
+    Y = 3.3E-4 * log(1 + XI * FY)
+
+    if 1.E-9 <= XI <= 5.E-4
+        C = sqrt(XI) / (layer.Z[i] * (1 + 1.E4 * sqrt(XI)))
+        AL = log(XI * FG / 2.7E-5)
+        Y += (C - HZ2 * AL * exp(-0.32 * AL^2)) / (1 + (XI * 1E4)^3)
     end
-    if (Z1 > 2)
-        GHI = Z1 * (1 - exp(FV * AZ1 - 0.879 * VV0 / (Z1^(0.65))))
-    end
-
-    # EFFECTIVE CHARGE FOR PROTONS AND ALPHA PARTICLES
-
-    # ********************   RESULTS  ********************
-
-    # ELECTRONIC ENERGY LOSS DEDXHI
-
-    DEDXHI = GHI^2 * Z2 * Y / (A2 * velocity^2)
-
-    # NUCLEAR ENERGY LOSS DEDXNU
-
-    ZA = sqrt(Z1^(2 / 3) + Z2^(2 / 3))
-    EPS = 3.25E4 * A2 * energy / (Z1 * Z2 * (A1 + A2) * ZA)
-    SIGMAN = 1.7 * sqrt(EPS) * log(EPS + 2.1718282) / (1 + 6.8 * EPS + 3.4 * EPS^1.5)
-    DEDXNU = SIGMAN * 5.105 * Z1 * Z2 * A1 / (ZA * A2 * (A1 + A2))
-
-    # TOTAL ENERGY LOSS DEDXTO
-
-    DEDXTO = DEDXHI + DEDXNU
-    return DEDXTO
 end
 
 function _G1(Z2::Integer)
@@ -800,7 +794,7 @@ function ads(I1, SIGN, XN1, EPS, A, Z, E, ISTAT)
         if i == 1
             DED1ST = DEDNEXT
             DEDNEXT = 0.0
-        elseif k == 2
+        elseif i == 2
             DDD = DED1ST - DEDNEXT
             if DDD < 0
                 DDD *= -1
@@ -821,6 +815,10 @@ end
 
 function vel(ENER, A1)
     return sqrt(2.13E-3 * ENER / A1)
+end
+
+function velocity(part::Particle)
+    return sqrt(2.13E-3 * part.energy / part.A)
 end
 
 function fkinem(EP, AP, AT, TH)
