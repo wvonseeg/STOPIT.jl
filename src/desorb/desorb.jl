@@ -608,8 +608,8 @@ function dedx(layer::T, part::Particle) where {T<:AbstractAbsorber}
 end
 
 function _Y(XI::Float64, index::Integer, layer::SolidAbsorber)
-    FY = 54721.0 * (1.35 - exp(-0.13 + 0.0014 * layer.Z[index]))
-    FG = 1.3 / (1 + exp(3.0 - layer.Z[index] / 5.0))
+    FY = 54721.0 * (1 + 0.0515 * sqrt(layer.A[index] / layer.partialdensity[index]) - exp(-0.23 * Z2))
+    FG = 1.2E-4 * layer.Z[index]^2 + 2.49E-2 * layer.A[index] / layer.partialdensity[index]
 
     HZ2 = 1.32e-5 * (9.0 - (_G1(layer.Z[index]) + _G2(layer.Z[index]) + _G3(layer.Z[index]) + _G4(layer.Z[index]) + _G5(layer.Z[index])))
 
@@ -624,8 +624,8 @@ function _Y(XI::Float64, index::Integer, layer::SolidAbsorber)
 end
 
 function _Y(XI::Float64, index::Integer, layer::GasAbsorber)
-    FY = 54721.0 * (1 + 0.0515 * sqrt(layer.A[index] / layer.partialdensity[index]) - exp(-0.23 * Z2))
-    FG = 1.2E-4 * layer.Z[index]^2 + 2.49E-2 * layer.A[index] / layer.partialdensity[index]
+    FY = 54721.0 * (1.35 - exp(-0.13 + 0.0014 * layer.Z[index]))
+    FG = 1.3 / (1 + exp(3.0 - layer.Z[index] / 5.0))
 
     HZ2 = 1.32e-5 * (9.0 - (_G1(layer.Z[index]) + _G2(layer.Z[index]) + _G3(layer.Z[index]) + _G4(layer.Z[index]) + _G5(layer.Z[index])))
 
