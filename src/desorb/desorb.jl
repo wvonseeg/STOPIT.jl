@@ -657,39 +657,43 @@ function desorb!(ianz, zp, ap, ep, loste)
     return
 end
 
-function dedx(layer::T, stopee::Particle) where {T<:AbstractAbsorber}
+function dedx(layer::T, A::Float64, Z::Integer, energy::Unitful.MeV) where {T<:AbstractAbsorber}
     DEDXTO = 0.0
-    vel = velocity(stopee)
-    for i in 1:length(layer.A)
+    vel = _velocity(A, energy)
+    for i = eachindex(layer.A)
         XI = vel^2 / 2
 
         # ENERGY LOSS OF HEAVY IONS
         # EFFECTIVE CHARGE
         # ELECTRONIC ENERGY LOSS DEDXHI
-        DEDXHI = layer.Z[i] * _Y(XI, i, layer) / (A2 * vel^2)
+        @inbounds DEDXHI = layer.Z[i] * _Y(XI, i, layer) / (layer.A[i] * vel^2)
 
-        AZ1 = log(1.035 - 0.4 * exp(-0.16 * stopee.Z))
+        AZ1 = log(1.035 - 0.4 * exp(-0.16 * Z))
 
-        if stopee.Z > 2
+        if Z > 2
             FV = vel < 0.62 ? 1 - exp(-137.0 * vel) : 1.0
-            DEDXHI *= (stopee.Z * (1 - exp(FV * AZ1 - 0.879 * VV0 / (Z1^(0.65)))))^2
+            DEDXHI *= (Z * (1 - exp(FV * AZ1 - 0.879 * 137.0 * vel / (Z^(0.65)))))^2
         elseif VZ1 > -85.2
-            DEDXHI *= (stopee.Z * (1 - exp(VZ1)))^2
+            DEDXHI *= (Z * (1 - exp(VZ1)))^2
         else
-            DEDXHI *= stopee.Z^2
+            DEDXHI *= Z^2
         end
 
         # NUCLEAR ENERGY LOSS DEDXNU
-        ZA = sqrt(stopee.Z^(2 / 3) + layer.Z[i]^(2 / 3))
-        ϵ = 3.25E4 * layer.A[i] * stopee.energy / (stopee.Z * layer.Z[i] * (stopee.A + layer.A[i]) * ZA)
+        ZA = sqrt(Z^(2 / 3) + layer.Z[i]^(2 / 3))
+        @inbounds ϵ = 3.25E4 * layer.A[i] * energy * 1u"MeV^-1" / (Z * layer.Z[i] * (A + layer.A[i]) * ZA)
         Σ = 1.7 * sqrt(ϵ) * log(ϵ + 2.1718282) / (1 + 6.8 * ϵ + 3.4 * ϵ^1.5)
-        DEDXNU = Σ * 5.105 * stopee.Z * layer.Z[i] * stopee.A / (ZA * layer.A[i] * (stopee.A + layer.A[i]))
+        @inbounds DEDXNU = Σ * 5.105 * Z * layer.Z[i] * A / (ZA * layer.A[i] * (A + layer.A[i]))
 
         # TOTAL ENERGY LOSS DEDXTO
 
-        DEDXTO += DEDXHI + DEDXNU
+        DEDXTO += (DEDXHI + DEDXNU) * layer.partialthickness[i]
     end
-    return DEDXTO
+    return DEDXTO * 1u"MeV*cm^2/mg"
+end
+
+function dedx(layer::T, part::Particle) where {T<:AbstractAbsorber}
+    return dedx(layer, part.A, part.Z, part.energy)
 end
 
 function _Y(XI::Float64, index::Integer, layer::SolidAbsorber)
@@ -750,71 +754,47 @@ function _G5(Z2::Integer)
     7.27 * exp(-0.005 * (Z2 - 73.06)^2)
 end
 
-function ads(I1, SIGN, XN1, EPS, A, Z, E, ISTAT)
-    #	SUBROUTINE FOR ENERGY LOSS CALCULATIONS
-    #	CALL DEDX FRO STOPPING POWER CALCULATIONS
-
-    #	COMMON ISG(19),INN(19)
-    #	1      ,DEN(19),THK(19),PRS(19),XLN(19),ARDEN(19)
-    #	1      ,ZNUMB(19,4),ANUMB(19,4),ELNUM(19,4),CONCN(19,4)
-    #	1         ,PRDEN(19,4),PRTHK(19,4)
-
-    #	N1= NUMBER OF SUBDIVISIONS FOR INTEGRATION
-    #		OF ENERGY LOSS
-
-    #1000	CONTINUE
-    EH = E
-    N1 = Int(XN1 + 0.001)
-    DEDNEXT = 0.0
-    for i = 1:N1
-        J1 = INN[I1]
-        ISGW = ISG[I1]
-        for j = 1:J1
-            AX = ANUMB[I1, j]
-            ZX = ZNUMB[I1, j]
-            FX = PRTHK[I1, j]
-            DENST = PRDEN[I1, j]
-            VH = vel(EH, A)
-            dedx(Z, A, ZX, AX, DENST, EH, VH, ISGW)
-            EH += DE * SIGN * FX
-            if EH <= 0.0
-                if i <= 2
-                    N1 *= 2
-                    XN1 = float(N1)
-                    # GO TO 1000
-                else
-                    ISTAT = -1
-                    return
-                end
-            end
-            if i <= 2
-                DEDNEXT += DE * FX
+function ads(steps::Integer, precision::Float64, part::Particle, layer::T) where {T<:AbstractAbsorber}
+    previous = 0.0
+    i = 1
+    while i <= steps
+        lostenergy += dedx(layer, part.A, part.Z, part.energy - lostenergy) / steps
+        if lostenergy >= part.energy
+            if i < 2
+                steps *= 10
+                i = 1
+                lostenergy = 0.0u"MeV"
+                continue
+            else
+                throw(ErrorException("You lost more energy than you had..."))
             end
         end
         if i == 1
-            DED1ST = DEDNEXT
-            DEDNEXT = 0.0
+            previous = lostenergy
         elseif i == 2
-            DDD = DED1ST - DEDNEXT
-            if DDD < 0
-                DDD *= -1
-            end
-            DDS = DED1ST + DEDNEXT
-            DDR = DDD / DDS
-            if DDR > EPS
-                N1 = N1 * 2
-                XN1 = float(N1)
-                # GO TO 1000
+            if abs(previous - lostenergy) / (previous + lostenergy) > precision
+                steps *= 2
+                i = 1
+                lostenergy = 0.0u"MeV"
+                continue
             end
         end
     end
-    ISTAT = 0
-    DEE = EH - E
-    return DEE
+    return lostenergy
 end
 
-function velocity(part::Particle)
-    return sqrt(2.13E-3 * part.energy / part.A)
+function ads!(steps::Integer, precision::Float64, part::Particle, layer::T) where {T<:AbstractAbsorber}
+    lostenergy = ads(steps, precision, part, layer)
+    part = Particle(part.Z, part.Anumber, part.A, part.energy - lostenergy)
+    return lostenergy
+end
+
+function _velocity(A::Float64, energy::Unitful.MeV)
+    return sqrt(2.13E-3 * energy * 1u"MeV^-1" / A)
+end
+
+function _velocity(part::Particle)
+    return _velocity(part.A, part.energy)
 end
 
 function fkinem(EP, AP, AT, TH)
