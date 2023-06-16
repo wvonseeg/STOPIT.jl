@@ -26,3 +26,7 @@ Manifest.toml
 fortran_code/
 
 .vscode/
+
+# Files for testing features without full unit tests
+test/playground.ipynb
+test/debugging.jl
