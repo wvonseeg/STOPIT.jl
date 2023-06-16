@@ -1,3 +1,5 @@
+export getstandardmedium
+
 const global STANDARDMEDIA = ("C02", "Si", "Graphite", "C4H10", "CF4", "CH2", "CD2", "He", "H2", "Mylar", "P10")
 
 """
@@ -20,36 +22,36 @@ Available standard media are as follows:
 * `Mylar` - Normally used for windows
 * `P10` - Mix of 90% Argon and 10% Methane, useful in ionization chambers
 """
-function getstandardmedium(name::String; pressure::Float64=0.0, depth::Float64=0.0)
+function getstandardmedium(name::String; pressure::Unitful.Pressure=0.0u"Torr", depth::Unitful.Length=0.0u"cm")
     @argcheck name in STANDARDMEDIA
-    depthwunits = depth * u"cm"
-    pressurewunits = pressure * u"Torr"
+    depth = uconvert(u"cm", depth)
+    pressure = uconvert(u"Torr", pressure)
     if name == "C02"
-        return GasAbsorber((12, 16), (6, 8), (1, 2), pressurewunits, depthwunits)
+        return GasAbsorber([12, 16], [6, 8], [1, 2], pressure, depth)
     elseif name == "Si"
         dens = 2.329u"g/cm^3"
-        return SolidAbsorber((28,), (14,), (1,), uconvert(u"mg/cm^2", dens * depthwunits), dens)
+        return SolidAbsorber([28,], [14,], [1,], dens * depth, dens)
     elseif name == "Graphite"
         dens = 2.267u"g/cm^3"
-        return SolidAbsorber((12,), (6,), (1,), uconvert(u"mg/cm^2", dens * depthwunits), dens)
+        return SolidAbsorber([12,], [6,], [1,], dens * depth, dens)
     elseif name == "C4H10"
-        return GasAbsorber((12, 1), (6, 1), (4, 10), pressurewunits, depthwunits)
+        return GasAbsorber([12, 1], [6, 1], [4, 10], pressure, depth)
     elseif name == "CF4"
-        return GasAbsorber((12, 19), (6, 9), (1, 4), pressurewunits, depthwunits)
+        return GasAbsorber([12, 19], [6, 9], [1, 4], pressure, depth)
     elseif name == "CH2"
         dens = 0.94u"g/cm^3"
-        return SolidAbsorber((12, 1), (6, 1), (1, 2), uconvert(u"mg/cm^2", dens * depthwunits), dens)
+        return SolidAbsorber([12, 1], [6, 1], [1, 2], dens * depth, dens)
     elseif name == "CD2"
         dens = 0.94u"g/cm^3"
-        return SolidAbsorber((12, 2), (6, 1), (1, 2), uconvert(u"mg/cm^2", dens * depthwunits), dens)
+        return SolidAbsorber([12, 2], [6, 1], [1, 2], dens * depth, dens)
     elseif name == "He"
-        return GasAbsorber((4,), (2,), (1,), pressurewunits, depthwunits)
+        return GasAbsorber([4,], [2,], [1,], pressure, depth)
     elseif name == "H2"
-        return GasAbsorber((1,), (1,), (2,), pressurewunits, depthwunits)
+        return GasAbsorber([1,], [1,], [2,], pressure, depth)
     elseif name == "Mylar"
         dens = 1.38u"g/cm^3"
-        return SolidAbsorber((12, 1, 16), (6, 1, 8), (10, 8, 4), uconvert(u"mg/cm^2", dens * depthwunits), dens)
+        return SolidAbsorber([12, 1, 16], [6, 1, 8], [10, 8, 4], dens * depth, dens)
     elseif name == "P10"
-        return GasAbsorber((12, 1, 40), (6, 1, 18), (2, 8, 90), pressurewunits, depthwunits)
+        return GasAbsorber([12, 1, 40], [6, 1, 18], [2, 8, 90], pressure, depth)
     end
 end

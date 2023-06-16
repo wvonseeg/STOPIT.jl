@@ -1,4 +1,4 @@
-export desorb!
+export desorb!, dedx, ads, ads!
 
 include("absorbers.jl")
 include("standardmedia.jl")
@@ -13,84 +13,13 @@ const MASSTABLE = (1.01, 4.0, 6.94, 9.01, 10.81, 12.01, 14.01, 16.00, 19.0,
     140.12, 140.91, 144.24, 147.0, 150.36, 151.96, 157.25, 158.93,
     162.5, 164.93, 167.26, 168.93, 173.04)
 
-function desorb!(lostenergy::Vector{Unitful.MeV}, iopt::Integer, sandwich::Sandwich, stopee::Particle; integrationsteps::Integer=100, precision::Float64=1E-4)
-    @argcheck 0 < iopt <= 6
+function desorb!(lostenergy::Vector{typeof(1.0u"MeV")}, stopee::Particle, sandwich::Sandwich; option::Integer=1, integrationsteps::Integer=100, precision::Float64=1E-4)
+    @argcheck 0 < option <= 6
 
     energy_initial = stopee.energy
 
-    if iopt >= 5
-        ep = emintab
-        zp = zth + 1.0
-        indexz = Int(zp - zth + 0.001)
-    end
-    #
-    #299	continue   !  come here for new particle (zp change)
-
-    izp = Int(zp + 0.001)
-
-    if iopt >= 5
-        if izp > 70
-            # write (6,*) 'no mass for Z = ',izp
-            # stop
-        else
-            ap = amass(izp)
-
-            #       The trick!. To calculate energy losses for deuterons and tritons,
-            #       enter zth = 0.2 and 0.3 respectively.    E. Chavez jul/92
-
-            if izp == 1
-                iap = Int(zth * 10.0 + 0.1)
-                ap = float(iap)
-            end
-        end
-    end
-    #
-    if iopt == 6
-        ideltalay = 8                # choose DE3 for eloss signal
-        if izp == 1
-            ideltalay = 16   # choose DEh for eloss signal
-        end
-    end
-
-    if iopt == 4
-        #GO TO 600
-    end
-
-    ipunch = 2
     @inbounds for i = eachindex(sandwich.layers)
-        if iopt >= 5
-            # GO TO 504
-            # 504 skips the writing just below
-        end
-
         lostenergy[i] = ads!(stopee, sandwich.layers[i], integrationsteps, precision)
-
-        if iopt >= 5
-            # GO TO 505
-            # 505 skips loste and if statement below
-        end
-
-        if EI < EPS || ISTAT == -1
-            # WRITE(IO2,402) I
-        end
-        # 505
-        # if particle stopped in layer beyond ianzi we must 
-        # check if iopt=5 or6 and calculate the energy loss in the
-        # front part (layers 1 thru ianzi).
-        istore = i
-        if EI < EPS
-            ipunch = 1
-        end
-        # control loop exit
-        # exit when particle runs out of energy in last layer
-        if EI < EPS || ISTAT == -1
-            # go to 701
-        end
-        # if interested in DE signal only (iopt=6) exit after 
-        # layer for which DE is sought was traversed
-        if iopt == 6 && I >= ianzide
-            # go to 701
-        end
     end
 end
 
@@ -568,48 +497,45 @@ function desorb(ianz, zp, ap, ep, loste)
     return
 end
 
-function dedx(layer::T, A::Float64, Z::Integer, energy::Unitful.MeV) where {T<:AbstractAbsorber}
-    DEDXTO = 0.0
-    vel = _velocity(A, energy)
-    for i = eachindex(layer.A)
-        XI = vel^2 / 2
+function dedx(layer::AbstractAbsorber, layerindex::Integer, particleA::Float64, particleZ::Integer, energy::Unitful.Energy)
+    vel = _velocity(particleA, energy)
+    XI = vel^2 / 2
 
-        # ENERGY LOSS OF HEAVY IONS
-        # EFFECTIVE CHARGE
-        # ELECTRONIC ENERGY LOSS DEDXHI
-        @inbounds DEDXHI = layer.Z[i] * _Y(XI, i, layer) / (layer.A[i] * vel^2)
+    # ENERGY LOSS OF HEAVY IONS
+    # EFFECTIVE CHARGE
+    # ELECTRONIC ENERGY LOSS DEDXHI
+    DEDXHI = layer.Z[layerindex] * _Y(XI, layerindex, layer) / (layer.A[layerindex] * vel^2)
 
-        AZ1 = log(1.035 - 0.4 * exp(-0.16 * Z))
+    AZ1 = log(1.035 - 0.4 * exp(-0.16 * particleZ))
 
-        if Z > 2
-            FV = vel < 0.62 ? 1 - exp(-137.0 * vel) : 1.0
-            DEDXHI *= (Z * (1 - exp(FV * AZ1 - 0.879 * 137.0 * vel / (Z^(0.65)))))^2
-        elseif VZ1 > -85.2
-            DEDXHI *= (Z * (1 - exp(VZ1)))^2
-        else
-            DEDXHI *= Z^2
-        end
-
-        # NUCLEAR ENERGY LOSS DEDXNU
-        ZA = sqrt(Z^(2 / 3) + layer.Z[i]^(2 / 3))
-        @inbounds ϵ = 3.25E4 * layer.A[i] * energy * 1u"MeV^-1" / (Z * layer.Z[i] * (A + layer.A[i]) * ZA)
-        Σ = 1.7 * sqrt(ϵ) * log(ϵ + 2.1718282) / (1 + 6.8 * ϵ + 3.4 * ϵ^1.5)
-        @inbounds DEDXNU = Σ * 5.105 * Z * layer.Z[i] * A / (ZA * layer.A[i] * (A + layer.A[i]))
-
-        # TOTAL ENERGY LOSS DEDXTO
-
-        DEDXTO += (DEDXHI + DEDXNU) * layer.partialthickness[i]
+    if particleZ > 2
+        FV = vel < 0.62 ? 1 - exp(-137.0 * vel) : 1.0
+        DEDXHI *= (particleZ * (1 - exp(FV * AZ1 - 0.879 * 137.0 * vel / (particleZ^(0.65)))))^2
+    elseif VZ1 > -85.2
+        DEDXHI *= (particleZ * (1 - exp(VZ1)))^2
+    else
+        DEDXHI *= particleZ^2
     end
-    return DEDXTO * 1u"MeV*cm^2/mg"
-end
 
-function dedx(layer::T, part::Particle) where {T<:AbstractAbsorber}
-    return dedx(layer, part.A, part.Z, part.energy)
+    # NUCLEAR ENERGY LOSS DEDXNU
+    ZA = sqrt(particleZ^(2 / 3) + layer.Z[layerindex]^(2 / 3))
+
+    ϵ = 3.25E4 * layer.A[layerindex] * energy * 1u"MeV^-1" /
+        (particleZ * layer.Z[layerindex] * (particleA + layer.A[layerindex]) * ZA)
+
+    Σ = 1.7 * sqrt(ϵ) * log(ϵ + 2.1718282) / (1 + 6.8 * ϵ + 3.4 * ϵ^1.5)
+
+    DEDXNU = Σ * 5.105 * particleZ * layer.Z[layerindex] * particleA /
+             (ZA * layer.A[layerindex] * (particleA + layer.A[layerindex]))
+
+    # TOTAL ENERGY LOSS
+    return (DEDXHI + DEDXNU) * 1u"MeV*cm^2/mg"
 end
 
 function _Y(XI::Float64, index::Integer, layer::SolidAbsorber)
-    FY = 54721.0 * (1 + 0.0515 * sqrt(layer.A[index] / layer.partialdensity[index]) - exp(-0.23 * Z2))
-    FG = 1.2E-4 * layer.Z[index]^2 + 2.49E-2 * layer.A[index] / layer.partialdensity[index]
+    pdens = layer.partialdensity[index] * u"cm^3/g"
+    FY = 54721.0 * (1 + 0.0515 * sqrt(layer.A[index] / pdens) - exp(-0.23 * layer.Z[index]))
+    FG = 1.2E-4 * layer.Z[index]^2 + 2.49E-2 * layer.A[index] / pdens
 
     HZ2 = 1.32e-5 * (9.0 - (_G1(layer.Z[index]) + _G2(layer.Z[index]) + _G3(layer.Z[index]) + _G4(layer.Z[index]) + _G5(layer.Z[index])))
 
@@ -617,10 +543,11 @@ function _Y(XI::Float64, index::Integer, layer::SolidAbsorber)
     Y = 3.3E-4 * log(1 + XI * FY)
 
     if 1.E-9 <= XI <= 5.E-4
-        C = 2 * sqrt(XI) / (layer.Z[i] * (1 + 1.E4 * sqrt(XI)))
+        C = 2 * sqrt(XI) / (layer.Z[index] * (1 + 1.E4 * sqrt(XI)))
         AL = log(XI * FG / 2.7E-5)
         Y += (C - HZ2 * AL * exp(-0.32 * AL^2)) / (1 + (XI * 1E4)^3)
     end
+    return Y
 end
 
 function _Y(XI::Float64, index::Integer, layer::GasAbsorber)
@@ -633,10 +560,11 @@ function _Y(XI::Float64, index::Integer, layer::GasAbsorber)
     Y = 3.3E-4 * log(1 + XI * FY)
 
     if 1.E-9 <= XI <= 5.E-4
-        C = sqrt(XI) / (layer.Z[i] * (1 + 1.E4 * sqrt(XI)))
+        C = sqrt(XI) / (layer.Z[index] * (1 + 1.E4 * sqrt(XI)))
         AL = log(XI * FG / 2.7E-5)
         Y += (C - HZ2 * AL * exp(-0.32 * AL^2)) / (1 + (XI * 1E4)^3)
     end
+    return Y
 end
 
 function _G1(Z2::Integer)
@@ -667,18 +595,22 @@ end
 
 function ads(part::Particle, layer::T, steps::Integer, precision::Float64) where {T<:AbstractAbsorber}
     previous = 0.0
+    lostenergy = 0.0u"MeV"
     i = 1
     N = steps
     while i <= N
-        lostenergy += dedx(layer, part.A, part.Z, part.energy - lostenergy) / steps
+        @inbounds for j = eachindex(layer.A)
+            lostenergy += dedx(layer, j, part.A, part.Z, part.energy - lostenergy) *
+                          layer.partialthickness[j] / N
+        end
         if lostenergy >= part.energy
             if i < 2
-                N *= 10
+                N *= 2
                 i = 1
                 lostenergy = 0.0u"MeV"
                 continue
             else
-                throw(ErrorException("You lost more energy than you had..."))
+                return part.energy
             end
         end
         if i == 1
@@ -691,17 +623,18 @@ function ads(part::Particle, layer::T, steps::Integer, precision::Float64) where
                 continue
             end
         end
+        i += 1
     end
     return lostenergy
 end
 
 function ads!(part::Particle, layer::T, steps::Integer, precision::Float64) where {T<:AbstractAbsorber}
-    lostenergy = ads(steps, precision, part, layer)
+    lostenergy = ads(part, layer, steps, precision)
     part = Particle(part.Z, part.Anumber, part.A, part.energy - lostenergy)
     return lostenergy
 end
 
-function _velocity(A::Float64, energy::Unitful.MeV)
+function _velocity(A::Float64, energy::typeof(1.0u"MeV"))
     return sqrt(2.13E-3 * energy * 1u"MeV^-1" / A)
 end
 

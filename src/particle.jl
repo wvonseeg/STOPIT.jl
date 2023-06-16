@@ -1,8 +1,9 @@
+export Particle, info
 struct Particle
-    Z::Integer
-    Anumber::Integer
+    Z::UInt8
+    Anumber::UInt16
     A::Float64
-    energy::typeof(1u"MeV")
+    energy::typeof(1.0u"MeV")
 end
 
 # Constructor to create particle by looking up mass from table
