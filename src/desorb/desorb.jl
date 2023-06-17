@@ -1,7 +1,5 @@
 export desorb!, dedx, ads, ads!
 
-include("absorbers.jl")
-include("standardmedia.jl")
 
 const MASSTABLE = (1.01, 4.0, 6.94, 9.01, 10.81, 12.01, 14.01, 16.00, 19.0,
     20.18, 22.99, 24.31, 26.98, 28.09, 30.97, 32.07, 35.45,
