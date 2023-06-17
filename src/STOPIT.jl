@@ -2,6 +2,7 @@ module STOPIT
 
 using StaticArrays
 using ArgCheck
+using QuadGK
 
 include("units.jl")
 include("particle.jl")
