@@ -496,8 +496,7 @@ function desorb(ianz, zp, ap, ep, loste)
 end
 
 function dedx!(energy::Unitful.Energy, thickstep::Thickness, layer::AbstractAbsorber, particleA::Float64, particleZ::Integer)
-    δE = 0.0u"MeV"
-    normalizedstepthickness = thickstep / layer.thickness
+    δEδx = 0.0u"MeV*cm^2/mg"
 
     # Quantities that can be calculated once, outside the loop
     vel = _velocity(particleA, energy)
@@ -512,7 +511,7 @@ function dedx!(energy::Unitful.Energy, thickstep::Thickness, layer::AbstractAbso
         DEDXHIfactor = (particleZ * (1 - exp(VZ1)))^2
     end
 
-    @inbounds @simd for i = eachindex(layer.A)
+    @inbounds @simd for i in eachindex(layer.A)
         # ENERGY LOSS OF HEAVY IONS
         # EFFECTIVE CHARGE
         # ELECTRONIC ENERGY LOSS DEDXHI
@@ -531,10 +530,8 @@ function dedx!(energy::Unitful.Energy, thickstep::Thickness, layer::AbstractAbso
                  (ZA * layer.A[i] * (particleA + layer.A[i]))
 
         # TOTAL ENERGY LOSS
-        δE += (DEDXHI + DEDXNU) * 1u"MeV*cm^2/mg" *
-              layer.partialthickness[i] * normalizedstepthickness
+        δE += (DEDXHI + DEDXNU) * 1u"MeV*cm^2/mg"
     end
-    energy -= δE
     return δE
 end
 
@@ -573,75 +570,40 @@ function _Y(XI::Float64, index::Integer, layer::GasAbsorber)
     return Y
 end
 
-function _G1(Z2::Integer)
+@inline function _G1(Z2::Integer)
     if Z2 <= 26
         return 19.84 * exp(-0.17 * (Z2 - 4.25)^2)
     end
     return 0.000001
 end
 
-function _G2(Z2::Integer)
+@inline function _G2(Z2::Integer)
     if Z2 <= 38
         return 17.12 * exp(-0.12 * (Z2 - 11.63)^2)
     end
     return 0.000001
 end
 
-function _G3(Z2::Integer)
+@inline function _G3(Z2::Integer)
     return 7.95 * exp(-0.015 * (Z2 - 30.2)^2)
 end
 
-function _G4(Z2::Integer)
+@inline function _G4(Z2::Integer)
     5.84 * exp(-0.022 * (Z2 - 48.63)^2)
 end
 
-function _G5(Z2::Integer)
+@inline function _G5(Z2::Integer)
     7.27 * exp(-0.005 * (Z2 - 73.06)^2)
 end
 
 function ads(part::Particle, layer::T, steps::Integer, precision::Float64) where {T<:AbstractAbsorber}
     lostenergy = 0.0u"MeV"
-    partenergy = part.energy
+    Eᵢ = part.energy
 
-    # Implementing Gauss-Kronrod integration based on documentation of QuadGK.jl
-    n = 15
-    x, w, wg = kronrod(n)
-    # Scale Kronrod points and weights on interval [a,b] = [0,layer thickness]
-    # https://en.wikipedia.org/wiki/Gauss%E2%80%93Kronrod_quadrature_formula
-    pts = zeros(typeof(1.0u"mg/cm^2"), 2 * length(x) - 1)
-    wts = zeros(2 * length(x) - 1)
-    g = x[2:2:end]
-    gpts = zeros(typeof(1.0u"mg/cm^2"), 2 * length(g) - 1)
-    gwts = zeros(2 * length(wg) - 1)
-
-    b = layer.thickness
-
-    @inbounds for i = eachindex(x)
-        pts[i] = (x[i] + 1) * b / 2
-        pts[end+1-i] = (-x[i] + 1) * b / 2
-        wts[i] = w[i] * b * 1.0u"cm^2/mg" / 2
-        wts[end+1-i] = -w[i] * b * 1.0u"cm^2/mg" / 2
+    i = 1
+    while i < steps
+        
     end
-
-    @inbounds for i = eachindex(g)
-        gpts[i] = (g[i] + 1) * b / 2
-        gpts[end+1-i] = (-g[i] + 1) * b / 2
-        gwts[i] = wg[i] * b * 1.0u"cm^2/mg" / 2
-        gwts[end+1-i] = wg[i] * b * 1.0u"cm^2/mg" / 2
-    end
-
-    # Calculate integral
-    for i = eachindex(pts)
-        lostenergy += dedx!(partenergy, pts[i], layer, part.A, part.Z) * wts[i]
-    end
-
-    # Calculate error in integral
-    err = 0.0u"MeV"
-    for i = eachindex(gpts)
-        err += dedx!(partenergy - err, gpts[i], layer, part.A, part.Z) * gwts[i]
-    end
-
-    err = abs(err - lostenergy)
 
     println(lostenergy)
     println(err)
@@ -654,11 +616,11 @@ function ads!(part::Particle, layer::T, steps::Integer, precision::Float64) wher
     return lostenergy
 end
 
-function _velocity(A::Float64, energy::typeof(1.0u"MeV"))
+@inline function _velocity(A::Float64, energy::typeof(1.0u"MeV"))
     return sqrt(2.13E-3 * energy * 1u"MeV^-1" / A)
 end
 
-function _velocity(part::Particle)
+@inline function _velocity(part::Particle)
     return _velocity(part.A, part.energy)
 end
 
