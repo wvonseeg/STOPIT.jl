@@ -11,20 +11,19 @@ const MASSTABLE = (1.01, 4.0, 6.94, 9.01, 10.81, 12.01, 14.01, 16.00, 19.0,
     140.12, 140.91, 144.24, 147.0, 150.36, 151.96, 157.25, 158.93,
     162.5, 164.93, 167.26, 168.93, 173.04)
 
-function desorb!(lostenergy::Vector{typeof(1.0u"MeV")}, stopee::Particle, sandwich::Sandwich; option::Integer=1, integrationsteps::Integer=100, precision::Float64=1E-4)
+function desorb!(lostenergy::Vector{typeof(1.0u"MeV")}, stopee::Particle, sandwich::Sandwich; option::Integer=1, integrationsteps::Integer=1000, precision::Float64=1E-4)
     @argcheck 0 < option <= 6
-
-    energy_initial = stopee.energy
 
     @inbounds for i = eachindex(sandwich.layers)
         lostenergy[i] = ads!(stopee, sandwich.layers[i], integrationsteps, precision)
     end
+    return lostenergy
 end
 
-function desorb!(stopee::Particle, sandwich::Sandwich; option::Integer=1, integrationsteps::Integer=100, precision::Float64=1E-4)
+function desorb!(stopee::Particle, sandwich::Sandwich; option::Integer=1, integrationsteps::Integer=1000, precision::Float64=1E-4)
     lostenergy = Vector{typeof(1.0u"MeV")}(undef, length(sandwich.layers))
-
     desorb!(lostenergy, stopee, sandwich; option=option, integrationsteps=integrationsteps, precision=precision)
+    return lostenergy
 end
 
 function desorb(ianz, zp, ap, ep, loste)
@@ -638,7 +637,6 @@ function ads(part::Particle, layer::T, steps::Integer, precision::Float64) where
         end
     end
 
-    println(δEₜ)
     return δEₜ
 end
 
