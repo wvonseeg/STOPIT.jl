@@ -13,14 +13,15 @@ Available standard media are as follows:
 * `C02` - Carbon dioxide...duh
 * `Si` - Silicon, mostly so you don't have to remember the density
 * `Graphite` - Just pure carbon, again for the density
-* `C4H10` - Methane
-* `CF4` - Not sure honestly
-* `CH2` - Good targets
-* `CD2` - Good, slightly heavier targets
+* `C4H10` - Butane, useful ionization gas
+* `CF4` - Tetrafluoromethane aka carbon tetrafluoride, useful ionization gas
+* `CH2` - Good proton target
+* `CD2` - Good deuterium target
 * `He` - Gaseous helium, probably not entirely necessary
 * `H2` - Gaseous hydrogen
 * `Mylar` - Normally used for windows
 * `P10` - Mix of 90% Argon and 10% Methane, useful in ionization chambers
+* `CH4` - Methane, pretty good ionization gas
 """
 function getstandardmedium(name::String; pressure::Unitful.Pressure=0.0u"Torr", depth::Unitful.Length=0.0u"cm")
     @argcheck name in STANDARDMEDIA
@@ -53,5 +54,7 @@ function getstandardmedium(name::String; pressure::Unitful.Pressure=0.0u"Torr", 
         return SolidAbsorber([12, 1, 16], [6, 1, 8], [10, 8, 4], dens * depth, dens)
     elseif name == "P10"
         return GasAbsorber([12, 1, 40], [6, 1, 18], [2, 8, 90], pressure, depth)
+    elseif name == "CH4"
+        return GasAbsorber([12, 1], [6, 1], [1, 4], pressure, depth)
     end
 end
