@@ -29,9 +29,9 @@ function GasAbsorber(A::Vector{Float64}, Z::Vector{<:Integer}, num::Vector{<:Int
     # For now only allow up to 4 elements in composite absorber
     # This number is taken as legacy from FROTRAN code and may be modified later
     @argcheck length(A) <= 4
-    @argcheck length(Z) == length(A)
-    @argcheck length(num) == length(Z)
-    @argcheck length(concentrations) == length(num)
+    @argcheck length(Z) == length(A) DimensionMismatch
+    @argcheck length(num) == length(Z) DimensionMismatch
+    @argcheck length(concentrations) == length(num) DimensionMismatch
 
     pressure = uconvert(u"Torr", pressure)
     depth = uconvert(u"cm", depth)
@@ -71,7 +71,8 @@ function GasAbsorber(A::Vector{Float64}, Z::Vector{<:Integer}, num::Vector{<:Int
 end
 
 function GasAbsorber(A::Vector{<:Integer}, Z::Vector{<:Integer}, num::Vector{<:Integer}, pressure::Unitful.Pressure, depth::Unitful.Length)
-    GasAbsorber(convert(Vector{Float64}, A), Z, num, pressure, depth)
+    massmatrix = getmass(A, Z)
+    GasAbsorber(massmatrix[:, 1], Z, num, pressure, depth)
 end
 
 function GasAbsorber(A::Vector{Float64}, Z::Vector{<:Integer}, num::Vector{<:Integer}, pressure::Float64, depth::Float64)
@@ -79,5 +80,5 @@ function GasAbsorber(A::Vector{Float64}, Z::Vector{<:Integer}, num::Vector{<:Int
 end
 
 function GasAbsorber(A::Vector{<:Integer}, Z::Vector{<:Integer}, num::Vector{<:Integer}, pressure::Float64, depth::Float64)
-    GasAbsorber(convert(Vector{Float64}, A), Z, num, pressure, depth)
+    GasAbsorber(A, Z, num, pressure * 1u"Torr", depth * 1u"cm")
 end
