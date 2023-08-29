@@ -7,7 +7,7 @@ import Unitful:
     rad, °,
     ns, μs, ms, s, minute, hr, d,
     Hz, kHz, MHz,
-    J, eV, keV, MeV,
+    J, eV, keV, MeV, GeV,
     nA, μA, mA, A, mol,
     μW, mW, W, C,
     mTorr, Torr, atm, bar, mbar, Pa, kPa
