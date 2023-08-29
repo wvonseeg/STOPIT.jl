@@ -24,7 +24,7 @@ Available standard media are as follows:
 * `CH4` - Methane, pretty good ionization gas
 """
 function getstandardmedium(name::String; pressure::Unitful.Pressure=0.0u"Torr", depth::Unitful.Length=0.0u"cm")
-    @argcheck name in STANDARDMEDIA
+    @argcheck name in STANDARDMEDIA DomainError(name, "Not one of the available standard media")
     depth = uconvert(u"cm", depth)
     pressure = uconvert(u"Torr", pressure)
     if name == "C02"
