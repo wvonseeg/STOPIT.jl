@@ -23,22 +23,22 @@ function SolidAbsorber(A::Vector{Float64}, Z::Vector{<:Integer}, num::Vector{<:I
     # Check arguments
     # For now only allow up to 4 elements in composite absorber
     # This number is taken as legacy from FROTRAN code and may be modified later
-    @argcheck length(A) <= 4
-    @argcheck length(Z) == length(A)
-    @argcheck length(num) == length(Z)
+    len = length(A)
+    @argcheck len <= 4
+    @argcheck length(Z) == len DimensionMismatch
+    @argcheck length(num) == len DimensionMismatch
 
     thickness = uconvert(u"mg/cm^2", thickness)
     density = uconvert(u"g/cm^3", density)
 
-    len = length(A)
     ANout = zeros(len)
     Tout = zeros(typeof(1.0u"mg/cm^2"), len)
     Dout = zeros(typeof(1.0u"g/cm^3"), len)
 
-    @inbounds for i = 1:len
-        ANout[i] = A[i] * num[i]
-        Tout[i] = thickness * num[i]
-        Dout[i] = density * num[i]
+    @inbounds for (i, N) in enumerate(num)
+        ANout[i] = A[i] * N
+        Tout[i] = thickness * N
+        Dout[i] = density * N
     end
 
     ANout ./= sum(ANout)
@@ -48,7 +48,8 @@ function SolidAbsorber(A::Vector{Float64}, Z::Vector{<:Integer}, num::Vector{<:I
 end
 
 function SolidAbsorber(A::Vector{<:Integer}, Z::Vector{<:Integer}, num::Vector{<:Integer}, thickness::Thickness, density::Unitful.Density)
-    SolidAbsorber(convert(Vector{Float64}, A), Z, num, thickness, density)
+    massmatrix = getmass(A, Z)
+    SolidAbsorber(massmatrix[:, 1], Z, num, thickness, density)
 end
 
 #function SolidAbsorber(A::Vector{Float64}, Z::Vector{<:Integer}, num::Vector{Float64}, thickness::Float64, density::Float64)
