@@ -1,4 +1,5 @@
-export AbstractAbsorber, SolidAbsorber, GasAbsorber, Sandwich, setlayer!, removelayer!
+module Absorbers
+export AbstractAbsorber, SolidAbsorber, GasAbsorber, Sandwich, setlayer!, removelayer!, getstandardmedium
 
 """
 Abstract type for absorber layers.
@@ -68,3 +69,4 @@ function removelayer!(sandwich::Sandwich, index::Integer)
     popat!(sandwich.layers, index)
     return sandwich
 end
+end # module Absorbers

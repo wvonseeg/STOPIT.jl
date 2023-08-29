@@ -1,5 +1,3 @@
-export getstandardmedium
-
 const global STANDARDMEDIA = ("C02", "Si", "Graphite", "C4H10", "CF4", "CH2", "CD2", "He", "H2", "Mylar", "P10")
 
 """
