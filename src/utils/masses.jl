@@ -7,11 +7,11 @@ const AZpattern = r"^(?:0+|\s+)\s+(?:\d+|-\d+)\s+\d+\s+(\d+)\s+(\d+)"
 const masspattern = r"(\d+)\s(\d+\.\d+|\d+(?=#))"
 const sigmapattern = r"(\d+\.\d+$|\d+(?=#$))"
 
-function getmass(Z::Integer, A::Integer)
+function getmass(A::Integer, Z::Integer)
     return getmass([Z], [A])
 end
 
-function getmass(Z::Vector{<:Integer}, A::Vector{<:Integer})
+function getmass(A::Vector{<:Integer}, Z::Vector{<:Integer})
     @argcheck length(Z) == length(A) DimensionMismatch
 
     order = sortperm(A)
