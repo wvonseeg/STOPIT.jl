@@ -19,7 +19,7 @@ function getmass(A::Vector{<:Integer}, Z::Vector{<:Integer})
     Asearch = A[order]
 
     AZcounter = 1
-    masslist = Array{Float64,2}(undef, 2, length(Z))
+    masslist = Array{Float64,2}(undef, length(Z), 2)
     open(AMEpath) do massfile
         # Read through each line looking for the correct Z & A combo
         for line in eachline(massfile)
@@ -29,7 +29,7 @@ function getmass(A::Vector{<:Integer}, Z::Vector{<:Integer})
                 Amatch = parse(Int, AZmatch.captures[2])
                 # If A & Z match, then extract mass and uncertainty
                 if Amatch == Asearch[AZcounter] && Zmatch == Zsearch[AZcounter]
-                    masslist[1, AZcounter], masslist[2, AZcounter] = _extractmasses(line)
+                    masslist[AZcounter, 1], masslist[AZcounter, 2] = _extractmasses(line)
                     if AZcounter == length(Asearch)
                         return masslist
                     end
