@@ -28,16 +28,15 @@ function GasAbsorber(A::Vector{Float64}, Z::Vector{<:Integer}, num::Vector{<:Int
     # Check arguments
     # For now only allow up to 4 elements in composite absorber
     # This number is taken as legacy from FROTRAN code and may be modified later
-    @argcheck length(A) <= 4
-    @argcheck length(Z) == length(A) DimensionMismatch
-    @argcheck length(num) == length(Z) DimensionMismatch
-    @argcheck length(concentrations) == length(num) DimensionMismatch
+    len = length(A)
+    @argcheck len <= 4
+    @argcheck length(Z) == len DimensionMismatch
+    @argcheck length(num) == len DimensionMismatch
+    @argcheck length(concentrations) == len DimensionMismatch
 
     pressure = uconvert(u"Torr", pressure)
     depth = uconvert(u"cm", depth)
 
-
-    len = length(A)
     thick = zeros(typeof(1.0u"mg/cm^2"), len)
     dens = zeros(typeof(1.0u"g/cm^3"), len)
 
