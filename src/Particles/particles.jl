@@ -1,4 +1,5 @@
-export Particle, info
+module Particles
+export Particle, info, Qvalue
 struct Particle
     Z::UInt8
     A::UInt16
@@ -17,3 +18,6 @@ function info(part::Particle)
     print("A = ", part.A)
     print("E = ", part.energy)
 end
+
+include("reactions.jl")
+end # module Particles
