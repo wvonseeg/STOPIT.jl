@@ -6,8 +6,10 @@ using ArgCheck
 include("utils/units.jl")
 include("utils/errors.jl")
 include("utils/masses.jl")
-include("particle.jl")
-include("absorbers/absorbers.jl")
-include("desorb/desorb.jl")
+include("Particles/particles.jl")
+include("Absorbers/absorbers.jl")
+include("desorb.jl")
+
+using .Particles, .Absorbers
 
 end # module STOPIT

@@ -1,4 +1,4 @@
-export ZeroEnergyException, ParticleStoppedException
+export ZeroEnergyException, ParticleStoppedException, MassNotFoundException
 
 struct ZeroEnergyException <: Exception end
 
