@@ -9,7 +9,7 @@ function desorb!(lostenergy::Vector{typeof(1.0u"MeV")}, stopee::Particle, sandwi
     return lostenergy
 end
 
-function desorb!(stopee::Particle, sandwich::Sandwich; option::Integer=1, integrationsteps::Integer=1000, precision::Float64=1E-4)
+function desorb!(stopee::Particle, sandwich::Sandwich; option::Integer=1, integrationsteps::Integer=1000, precision::Float64=1e-4)
     lostenergy = Vector{typeof(1.0u"MeV")}(undef, length(sandwich.layers))
     desorb!(lostenergy, stopee, sandwich; option=option, integrationsteps=integrationsteps, precision=precision)
     return lostenergy
@@ -489,6 +489,43 @@ function desorb(ianz, zp, ap, ep, loste)
     return
 end
 
+function stoppingenergy(A::Integer, Z::Integer, sandwich::Sandwich;
+    initialenergy::Unitful.Energy=100.0u"MeV", integrationsteps::Integer=1000,
+    precision::Float64=1e-4, atol::Real=1e-3)
+    energy = uconvert(1.0u"MeV", initialenergy)
+    atol *= 1.0u"MeV"
+    stopped = false
+    Eloss = 0.0u"MeV"
+
+    while !stopped
+        stopee = Particle(A, Z, energy)
+        try
+            @inbounds for layer in sandwich.layers
+                Eloss += ads(stopee, layer, integrationsteps, precision)
+            end
+            ΔE = energy - Eloss
+            if isapprox(ΔE, 0.0u"MeV"; atol=atol)
+                return energy
+            end
+            # Reset variables and lower energy
+            energy -= ΔE
+            Eloss = 0.0u"MeV"
+        catch err
+            if isa(err, ParticleStoppedException)
+                # If the particle stopped need to increase the energy and try again
+                energy *= 2
+                Eloss = 0.0u"MeV"
+            else
+                rethrow()
+            end
+        end
+    end
+end
+
+function stoppingdepth(stopee::Particle, layer::T; integrationsteps::Integer=1000, precision::Float64=1e-4)
+
+end
+
 function dedx(energy::Unitful.Energy, index::Integer, layer::AbstractAbsorber, part::Particle)
     δEδx = 0.0u"MeV*cm^2/mg"
 
@@ -602,10 +639,8 @@ function ads(part::Particle, layer::T, steps::Integer, precision::Float64) where
                 steps *= 2
                 Eᵢ = part.energy
                 δEₜ = 0.0u"MeV"
-            elseif isa(err, ParticleStoppedException)
-                δEₜ = part.energy
-                Eᵢ = 0.0u"MeV"
-                break
+            else
+                rethrow()
             end
         else
             if i == 1
@@ -630,6 +665,7 @@ function ads(part::Particle, layer::T, steps::Integer, precision::Float64) where
 end
 
 function ads!(part::Particle, layer::T, steps::Integer, precision::Float64) where {T<:AbstractAbsorber}
+    # NEED TO FIX HOW THIS CATCHES PARTICLE STOPS EXCEPTION
     lostenergy = ads(part, layer, steps, precision)
     part = Particle(part.Z, part.A, part.mass, part.energy - lostenergy)
     return lostenergy
