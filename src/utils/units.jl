@@ -13,7 +13,7 @@ import Unitful:
     mTorr, Torr, atm, bar, mbar, Pa, kPa
 
 import Unitful:
-    c0, mn, mp, q
+    c0, mn, mp, q, me
 
 import Unitful: 𝐋, 𝐌, 𝐓, 𝐈, 𝐉, 𝐍, 𝚯
 
