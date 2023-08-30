@@ -1,5 +1,5 @@
 module Particles
-export Particle, info
+export Particle, info, Qvalue
 struct Particle
     Z::UInt8
     A::UInt16
