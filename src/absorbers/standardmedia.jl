@@ -30,33 +30,33 @@ function getstandardmedium(name::String; pressure::Unitful.Pressure=0.0u"Torr", 
         return GasAbsorber([12, 16], [6, 8], [1, 2], pressure, depth)
     elseif name == "Si"
         dens = 2.329u"g/cm^3"
-        return SolidAbsorber([28,], [14,], [1,], dens * depth, dens)
+        return SolidAbsorber([28,], [14,], [1,], depth, dens)
     elseif name == "Graphite"
         dens = 2.267u"g/cm^3"
-        return SolidAbsorber([12,], [6,], [1,], dens * depth, dens)
+        return SolidAbsorber([12,], [6,], [1,], depth, dens)
     elseif name == "C4H10"
         return GasAbsorber([12, 1], [6, 1], [4, 10], pressure, depth)
     elseif name == "CF4"
         return GasAbsorber([12, 19], [6, 9], [1, 4], pressure, depth)
     elseif name == "CH2"
         dens = 0.94u"g/cm^3"
-        return SolidAbsorber([12, 1], [6, 1], [1, 2], dens * depth, dens)
+        return SolidAbsorber([12, 1], [6, 1], [1, 2], depth, dens)
     elseif name == "CD2"
         dens = 0.94u"g/cm^3"
-        return SolidAbsorber([12, 2], [6, 1], [1, 2], dens * depth, dens)
+        return SolidAbsorber([12, 2], [6, 1], [1, 2], depth, dens)
     elseif name == "He"
         return GasAbsorber([4,], [2,], [1,], pressure, depth)
     elseif name == "H2"
         return GasAbsorber([1,], [1,], [2,], pressure, depth)
     elseif name == "Mylar"
         dens = 1.38u"g/cm^3"
-        return SolidAbsorber([12, 1, 16], [6, 1, 8], [10, 8, 4], dens * depth, dens)
+        return SolidAbsorber([12, 1, 16], [6, 1, 8], [10, 8, 4], depth, dens)
     elseif name == "P10"
         return GasAbsorber([12, 1, 40], [6, 1, 18], [2, 8, 90], pressure, depth)
     elseif name == "CH4"
         return GasAbsorber([12, 1], [6, 1], [1, 4], pressure, depth)
     elseif name == "Kapton"
         dens = 1.42u"g/cm^3"
-        return SolidAbsorber([12, 1, 14, 16], [6, 1, 7, 8], [22, 10, 2, 5], dens * depth, dens)
+        return SolidAbsorber([12, 1, 14, 16], [6, 1, 7, 8], [22, 10, 2, 5], depth, dens)
     end
 end
