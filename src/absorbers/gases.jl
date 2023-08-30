@@ -8,7 +8,7 @@ The units of fields are as follows:
 * Depth     => cm
 """
 struct GasAbsorber <: AbstractAbsorber
-    A::Tuple{Float64}
+    A::Tuple{1.0u"u"}
     Z::Tuple{UInt8}
     num::Tuple{UInt8}
     thickness::typeof(1.0u"mg/cm^2")
@@ -24,7 +24,7 @@ end
 #### GasAbsorber Constructors####
 #################################
 
-function GasAbsorber(A::Vector{Float64}, Z::Vector{<:Integer}, num::Vector{<:Integer}, concentrations::Vector{Float64}, pressure::Unitful.Pressure, depth::Unitful.Length)
+function GasAbsorber(A::Vector{<:Integer}, Z::Vector{<:Integer}, num::Vector{<:Integer}, concentrations::Vector{Float64}, pressure::Unitful.Pressure, depth::Unitful.Length)
     # Check arguments
     # For now only allow up to 4 elements in composite absorber
     # This number is taken as legacy from FROTRAN code and may be modified later
@@ -55,29 +55,22 @@ function GasAbsorber(A::Vector{Float64}, Z::Vector{<:Integer}, num::Vector{<:Int
         dens[i] = thick[i] / depth
         density += dens[i]
     end
-    GasAbsorber(tuple(A...), tuple(convert(Vector{UInt8}, Z)...),
+    massmatrix = getmass(A, Z)
+    GasAbsorber(tuple(massmatrix[:, 1]...), tuple(convert(Vector{UInt8}, Z)...),
         tuple(convert(Vector{UInt8}, num)...), thickness, tuple(thick...),
         density, tuple(dens...), tuple(concentrations...), pressure, depth)
 end
 
-function GasAbsorber(A::Vector{Float64}, Z::Vector{<:Integer}, num::Vector{<:Integer}, concentrations::Vector{Float64}, pressure::Float64, depth::Float64)
+function GasAbsorber(A::Vector{<:Real}, Z::Vector{<:Real}, num::Vector{<:Real}, concentrations::Vector{Real}, pressure::Real, depth::Real)
     GasAbsorber(A, Z, num, concentrations, pressure * 1u"Torr", depth * 1u"cm")
 end
 
-function GasAbsorber(A::Vector{Float64}, Z::Vector{<:Integer}, num::Vector{<:Integer}, pressure::Unitful.Pressure, depth::Unitful.Length)
+function GasAbsorber(A::Vector{<:Integer}, Z::Vector{<:Integer}, num::Vector{<:Integer}, pressure::Unitful.Pressure, depth::Unitful.Length)
     concentrations = ones(length(A))
     GasAbsorber(A, Z, num, concentrations, pressure, depth)
 end
 
-function GasAbsorber(A::Vector{<:Integer}, Z::Vector{<:Integer}, num::Vector{<:Integer}, pressure::Unitful.Pressure, depth::Unitful.Length)
-    massmatrix = getmass(A, Z)
-    GasAbsorber(massmatrix[:, 1], Z, num, pressure, depth)
-end
-
-function GasAbsorber(A::Vector{Float64}, Z::Vector{<:Integer}, num::Vector{<:Integer}, pressure::Float64, depth::Float64)
-    GasAbsorber(A, Z, num, pressure * 1u"Torr", depth * 1u"cm")
-end
-
-function GasAbsorber(A::Vector{<:Integer}, Z::Vector{<:Integer}, num::Vector{<:Integer}, pressure::Float64, depth::Float64)
-    GasAbsorber(A, Z, num, pressure * 1u"Torr", depth * 1u"cm")
+function GasAbsorber(A::Vector{<:Real}, Z::Vector{<:Real}, num::Vector{<:Real}, pressure::Real, depth::Real)
+    concentrations = ones(length(A))
+    GasAbsorber(A, Z, num, concentrations, pressure, depth)
 end

@@ -3,7 +3,7 @@ export Particle, info, Qvalue
 struct Particle
     Z::UInt8
     A::UInt16
-    mass::Float64
+    mass::typeof(1.0u"u")
     energy::typeof(1.0u"MeV")
 end
 
