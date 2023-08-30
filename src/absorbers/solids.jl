@@ -6,7 +6,8 @@ The units of fields are as follows:
 * Density   => g cm^-3
 """
 struct SolidAbsorber <: AbstractAbsorber
-    A::Tuple{1.0u"u"}
+    A::Tuple{UInt16}
+    mass::Tuple{typeof(1.0u"u")}
     Z::Tuple{UInt8}
     num::Tuple{UInt8}
     thickness::typeof(1.0u"mg/cm^2")
@@ -19,7 +20,7 @@ end
 ### SolidAbsorber Constructors###
 #################################
 
-function SolidAbsorber(A::Vector{<:Integer}, Z::Vector{<:Integer}, num::Vector{<:Integer}, thickness::Thickness, density::Unitful.Density)
+function SolidAbsorber(A::Vector{<:Integer}, Z::Vector{<:Integer}, num::Vector{<:Integer}, thickness::typeof(1.0u"mg/cm^2"), density::Unitful.Density)
     # Check arguments
     # For now only allow up to 4 elements in composite absorber
     # This number is taken as legacy from FROTRAN code and may be modified later
@@ -28,7 +29,7 @@ function SolidAbsorber(A::Vector{<:Integer}, Z::Vector{<:Integer}, num::Vector{<
     @argcheck length(Z) == len DimensionMismatch
     @argcheck length(num) == len DimensionMismatch
 
-    thickness = uconvert(u"mg/cm^2", thickness)
+    #thickness = uconvert(u"mg/cm^2", thickness)
     density = uconvert(u"g/cm^3", density)
 
     ANout = zeros(len)
@@ -43,9 +44,14 @@ function SolidAbsorber(A::Vector{<:Integer}, Z::Vector{<:Integer}, num::Vector{<
 
     ANout ./= sum(ANout)
     massmatrix = getmass(A, Z)
-    SolidAbsorber(tuple(massmatrix[:, 1]...), tuple(convert(Vector{UInt8}, Z)...),
+    SolidAbsorber(tuple(A...), tuple(massmatrix[:, 1]...),
+        tuple(convert(Vector{UInt8}, Z)...),
         tuple(convert(Vector{UInt8}, ANout)...), thickness,
         tuple(Tout...), density, tuple(Dout...))
+end
+
+function SolidAbsorber(A::Vector{<:Integer}, Z::Vector{<:Integer}, num::Vector{<:Integer}, depth::Unitful.Length, density::Unitful.Density)
+    SolidAbsorber(A, Z, num, uconvert(u"mg/cm^2", density * depth), density)
 end
 
 function SolidAbsorber(A::Vector{<:Real}, Z::Vector{<:Real}, num::Vector{<:Real}, thickness::Real, density::Real)

@@ -1,5 +1,6 @@
 module Particles
 using NaturallyUnitful, ArgCheck
+import ..STOPIT: getmass
 export Particle, info, Qvalue
 struct Particle
     Z::UInt8
@@ -11,7 +12,7 @@ end
 # Constructor to create particle by looking up mass from table
 function Particle(Z::Integer, A::Integer, energy::typeof(1.0u"MeV"))
     mass = getmass(Z, A)
-    Particle(Z, A, mass, energy)
+    Particle(Z, A, mass[1, 1], energy)
 end
 
 function show(part::Particle)

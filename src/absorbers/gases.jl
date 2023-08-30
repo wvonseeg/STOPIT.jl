@@ -8,7 +8,8 @@ The units of fields are as follows:
 * Depth     => cm
 """
 struct GasAbsorber <: AbstractAbsorber
-    A::Tuple{1.0u"u"}
+    A::Tuple{UInt16}
+    mass::Tuple{typeof(1.0u"u")}
     Z::Tuple{UInt8}
     num::Tuple{UInt8}
     thickness::typeof(1.0u"mg/cm^2")
@@ -56,7 +57,8 @@ function GasAbsorber(A::Vector{<:Integer}, Z::Vector{<:Integer}, num::Vector{<:I
         density += dens[i]
     end
     massmatrix = getmass(A, Z)
-    GasAbsorber(tuple(massmatrix[:, 1]...), tuple(convert(Vector{UInt8}, Z)...),
+    GasAbsorber(tuple(A...), tuple(massmatrix[:, 1]...),
+        tuple(convert(Vector{UInt8}, Z)...),
         tuple(convert(Vector{UInt8}, num)...), thickness, tuple(thick...),
         density, tuple(dens...), tuple(concentrations...), pressure, depth)
 end
