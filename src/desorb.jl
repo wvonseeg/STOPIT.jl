@@ -509,18 +509,18 @@ function dedx(energy::Unitful.Energy, index::Integer, layer::AbstractAbsorber, p
     # EFFECTIVE CHARGE
     # ELECTRONIC ENERGY LOSS DEDXHI
     DEDXHI = DEDXHIfactor^2 * layer.Z[index] * _Y(XI, index, layer) /
-             (1.0u"u^-1" * layer.A[index] * vel^2)
+             (1.0u"u^-1" * layer.mass[index] * vel^2)
 
     # NUCLEAR ENERGY LOSS DEDXNU
     ZA = sqrt(part.Z^(2 / 3) + layer.Z[index]^(2 / 3))
 
-    ϵ = 3.25e4u"MeV^-1" * layer.A[index] * energy /
-        (part.Z * layer.Z[index] * (part.mass + layer.A[index]) * ZA)
+    ϵ = 3.25e4u"MeV^-1" * layer.mass[index] * energy /
+        (part.Z * layer.Z[index] * (part.mass + layer.mass[index]) * ZA)
 
     Σ = 1.7 * sqrt(ϵ) * log(ϵ + 2.1718282) / (1 + 6.8 * ϵ + 3.4 * ϵ^1.5)
 
     DEDXNU = Σ * 5.105u"u" * part.Z * layer.Z[index] * part.mass /
-             (ZA * layer.A[index] * (part.mass + layer.A[index]))
+             (ZA * layer.mass[index] * (part.mass + layer.mass[index]))
 
     # TOTAL ENERGY LOSS
     δEδx += (DEDXHI + DEDXNU) * 1.0u"MeV*cm^2/mg"
@@ -529,13 +529,13 @@ end
 
 function _Y(XI::Float64, index::Integer, layer::SolidAbsorber)
     pdens = layer.partialdensity[index] * 1.0u"cm^3/g"
-    FY = 54721.0 * (1 + 0.0515 * sqrt(layer.A[index] / pdens) - exp(-0.23 * layer.Z[index]))
+    FY = 54721.0 * (1 + 0.0515u"u^(-1/2)" * sqrt(layer.mass[index] / pdens) - exp(-0.23 * layer.Z[index]))
 
     # CALCULATION OF Y(XI)
     Y = 3.3e-4 * log(1 + XI * FY)
 
     if 1e-9 <= XI <= 5e-4
-        FG = 1.2E-4 * layer.Z[index]^2 + 2.49E-2u"u^-1" * layer.A[index] / pdens
+        FG = 1.2E-4 * layer.Z[index]^2 + 2.49E-2u"u^-1" * layer.mass[index] / pdens
         HZ2 = 1.32e-5 * (9.0 - (_G1(layer.Z[index]) + _G2(layer.Z[index]) + _G3(layer.Z[index]) + _G4(layer.Z[index]) + _G5(layer.Z[index])))
         C = 2 * sqrt(XI) / (layer.Z[index] * (1 + 1.E4 * sqrt(XI)))
         AL = log(XI * FG / 2.7E-5)
