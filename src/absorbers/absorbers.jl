@@ -1,5 +1,12 @@
 module Absorbers
-export AbstractAbsorber, SolidAbsorber, GasAbsorber, Sandwich, setlayer!, removelayer!, getstandardmedium
+export AbstractAbsorber,
+    SolidAbsorber,
+    GasAbsorber,
+    Sandwich,
+    setlayer!,
+    removelayer!,
+    purgelayers!,
+    getstandardmedium
 
 """
 Abstract type for absorber layers.
@@ -67,6 +74,11 @@ function removelayer!(sandwich::Sandwich, index::Integer)
     @argcheck length(sandwich.layers) > 0
     @argcheck 0 < index <= length(sandwich.layers)
     popat!(sandwich.layers, index)
+    return sandwich
+end
+
+function purgelayers!(sandwich::Sandwich)
+    empty!(sandwich.layers)
     return sandwich
 end
 end # module Absorbers
