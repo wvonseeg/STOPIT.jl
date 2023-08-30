@@ -7,10 +7,6 @@ const AZpattern = r"^(?:0+|\s+)\s+(?:\d+|-\d+)\s+\d+\s+(\d+)\s+(\d+)"
 const masspattern = r"(\d+)\s(\d+\.\d+|\d+(?=#))"
 const sigmapattern = r"(\d+\.\d+$|\d+(?=#$))"
 
-function getmass(A::Integer, Z::Integer)
-    return getmass([Z], [A])
-end
-
 function getmass(A::Vector{<:Integer}, Z::Vector{<:Integer})
     @argcheck length(Z) == length(A) DimensionMismatch
 
@@ -19,7 +15,7 @@ function getmass(A::Vector{<:Integer}, Z::Vector{<:Integer})
     Asearch = A[order]
 
     AZcounter = 1
-    masslist = Array{Float64,2}(undef, length(Z), 2)
+    masslist = Array{typeof(1.0u"u"),2}(undef, length(Z), 2)
     open(AMEpath) do massfile
         # Read through each line looking for the correct Z & A combo
         for line in eachline(massfile)
@@ -43,13 +39,17 @@ function getmass(A::Vector{<:Integer}, Z::Vector{<:Integer})
     end
 end
 
+function getmass(A::Integer, Z::Integer)
+    return getmass([Z], [A])
+end
+
 function _extractmasses(AMEline::String)
     massmatch = match(masspattern, AMEline)
     sigmamatch = match(sigmapattern, AMEline)
     if massmatch !== nothing || sigmamatch !== nothing
-        mass = parse(Float64, massmatch.captures[1])
-        mass += endswith(massmatch.captures[2], "#") ? 0.0 : parse(Float64, massmatch.captures[2]) * 1e-6
-        sigma = endswith(sigmamatch.captures[1], "#") ? 0.0 : parse(Float64, sigmamatch.captures[1]) * 1e-6
+        mass = parse(Float64, massmatch.captures[1])*1.0u"u"
+        mass += endswith(massmatch.captures[2], "#") ? 0.0u"u" : parse(Float64, massmatch.captures[2]) * 1e-6u"u"
+        sigma = endswith(sigmamatch.captures[1], "#") ? 0.0u"u" : parse(Float64, sigmamatch.captures[1]) * 1e-6u"u"
         return mass, sigma
     end
 end
