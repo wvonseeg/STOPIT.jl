@@ -19,7 +19,7 @@ function Qvalue(target::Particle, projectile::Particle, rxntype::String)
         productmass = sum(getmass([productA, 4], [productZ, 2])[:, 1])
     elseif rxntype == "b-"
         productZ += 1
-        productmass = getmass(productA, productZ)[1, 1]
+        productmass = getmass(productA, productZ)[1, 1] + uconvert(u"u", 1.0u"me")
     elseif rxntype == "b+"
         productZ -= 1
         productmass = getmass(productA, productZ)[1, 1] + uconvert(u"u", 1.0u"me")
