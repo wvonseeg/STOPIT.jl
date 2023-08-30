@@ -1,4 +1,4 @@
-const global STANDARDMEDIA = ("C02", "Si", "Graphite", "C4H10", "CF4", "CH2", "CD2", "He", "H2", "Mylar", "P10")
+const global STANDARDMEDIA = ("C02", "Si", "Graphite", "C4H10", "CF4", "CH2", "CD2", "He", "H2", "Mylar", "P10", "CH4", "Kapton")
 
 """
 	getstandardmedium(name::String; pressure::Float64 = 0.0, depth::Float64 = 0.0)
@@ -17,9 +17,10 @@ Available standard media are as follows:
 * `CD2` - Good deuterium target
 * `He` - Gaseous helium, probably not entirely necessary
 * `H2` - Gaseous hydrogen
-* `Mylar` - Normally used for windows
+* `Mylar` - Normally used for windows (C10H8O4)
 * `P10` - Mix of 90% Argon and 10% Methane, useful in ionization chambers
 * `CH4` - Methane, pretty good ionization gas
+* `Kapton` - Useful window material and vacuum-safe tape (C22H10N2O5)
 """
 function getstandardmedium(name::String; pressure::Unitful.Pressure=0.0u"Torr", depth::Unitful.Length=0.0u"cm")
     @argcheck name in STANDARDMEDIA DomainError(name, "Not one of the available standard media")
@@ -54,5 +55,8 @@ function getstandardmedium(name::String; pressure::Unitful.Pressure=0.0u"Torr", 
         return GasAbsorber([12, 1, 40], [6, 1, 18], [2, 8, 90], pressure, depth)
     elseif name == "CH4"
         return GasAbsorber([12, 1], [6, 1], [1, 4], pressure, depth)
+    elseif name == "Kapton"
+        dens = 1.42u"g/cm^3"
+        return SolidAbsorber([12, 1, 14, 16], [6, 1, 7, 8], [22, 10, 2, 5], dens * depth, dens)
     end
 end
