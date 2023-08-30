@@ -3,14 +3,14 @@ using NaturallyUnitful, ArgCheck
 import ..STOPIT: getmass
 export Particle, info, Qvalue
 struct Particle
-    Z::UInt8
     A::UInt16
     mass::typeof(1.0u"u")
+    Z::UInt8
     energy::typeof(1.0u"MeV")
 end
 
 # Constructor to create particle by looking up mass from table
-function Particle(Z::Integer, A::Integer, energy::typeof(1.0u"MeV"))
+function Particle(A::Integer, Z::Integer, energy::typeof(1.0u"MeV"))
     mass = getmass(Z, A)
     Particle(Z, A, mass[1, 1], energy)
 end
