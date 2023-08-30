@@ -1,4 +1,5 @@
 module Particles
+using NaturallyUnitful, ArgCheck
 export Particle, info, Qvalue
 struct Particle
     Z::UInt8
@@ -13,10 +14,11 @@ function Particle(Z::Integer, A::Integer, energy::typeof(1.0u"MeV"))
     Particle(Z, A, mass, energy)
 end
 
-function info(part::Particle)
-    print("Z = ", part.Z)
-    print("A = ", part.A)
-    print("E = ", part.energy)
+function show(part::Particle)
+    println("Z = ", part.Z)
+    println("A = ", part.A)
+    println("Mass = ", part.mass)
+    println("E = ", part.energy)
 end
 
 include("reactions.jl")

@@ -1,6 +1,4 @@
-using Unitful
-
-export masstoenergy
+using NaturallyUnitful
 
 import Unitful:
     nm, μm, mm, cm, m,
@@ -29,8 +27,3 @@ import Unitful:
 import Unitful: LengthUnits, AreaUnits, MassUnits, TemperatureUnits
 
 @derived_dimension Thickness 𝐌 / 𝐋^2 true
-
-@inline function masstoenergy(mass::typeof(1.0u"u"))
-    # 931.49410242(28) MeV
-    return 931.49410242u"MeV/u" * mass
-end

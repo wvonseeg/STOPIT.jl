@@ -1,4 +1,5 @@
 module Absorbers
+using NaturallyUnitful, ArgCheck
 export AbstractAbsorber,
     SolidAbsorber,
     GasAbsorber,

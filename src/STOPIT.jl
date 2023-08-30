@@ -12,4 +12,8 @@ include("desorb.jl")
 
 using .Particles, .Absorbers
 
+function __init__()
+    Unitful.register(STOPIT)
+end
+
 end # module STOPIT
