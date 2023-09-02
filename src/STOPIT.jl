@@ -8,6 +8,7 @@ include("utils/errors.jl")
 include("utils/masses.jl")
 include("Particles/particles.jl")
 include("Absorbers/absorbers.jl")
+include("Interactive/interactive.jl")
 
 using .Particles, .Absorbers
 
