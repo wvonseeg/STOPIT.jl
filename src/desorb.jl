@@ -522,7 +522,7 @@ function stoppingenergy(A::Integer, Z::Integer, sandwich::Sandwich;
     end
 end
 
-function stoppingdepth(stopee::Particle, layer::T; integrationsteps::Integer=1000, precision::Float64=1e-4)
+function stoppingdepth(stopee::Particle, layer::T; integrationsteps::Integer=1000, precision::Float64=1e-4) where {T<:AbstractAbsorber}
 
 end
 
