@@ -47,7 +47,7 @@ function _extractmasses(AMEline::String)
     massmatch = match(masspattern, AMEline)
     sigmamatch = match(sigmapattern, AMEline)
     if massmatch !== nothing || sigmamatch !== nothing
-        mass = parse(Float64, massmatch.captures[1])*1.0u"u"
+        mass = parse(Float64, massmatch.captures[1]) * 1.0u"u"
         mass += endswith(massmatch.captures[2], "#") ? 0.0u"u" : parse(Float64, massmatch.captures[2]) * 1e-6u"u"
         sigma = endswith(sigmamatch.captures[1], "#") ? 0.0u"u" : parse(Float64, sigmamatch.captures[1]) * 1e-6u"u"
         return mass, sigma

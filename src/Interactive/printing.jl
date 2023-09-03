@@ -13,15 +13,26 @@ function _printhelp()
 end
 
 function _printstatus()
-
-end
-
-function _printlayer(layer::T) where {T<:AbstractAbsorber}
-
+    println("Stopee => $(stopee)")
+    for (i, layer) in enumerate(sandwich.layers)
+        println("Layer $i")
+        println(layer)
+    end
 end
 
 function _printstandardmedia()
     for (i, medium) in enumerate(Absorbers.STANDARDMEDIA)
         println("$i: $medium")
     end
+end
+
+function _printresults(energyloss::Vector{typeof(1.0u"MeV")})
+    println("Stopee => $(stopee)")
+    for (i, layer) in enumerate(sandwich.layers)
+        println("Layer $i")
+        println(layer)
+        println("Energy lost = $(energyloss[i])")
+    end
+    remaining = stopee.energy - sum(energyloss)
+    println("\nEnergy remaining = $(remaining)")
 end

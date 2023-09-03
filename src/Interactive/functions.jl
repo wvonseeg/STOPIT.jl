@@ -88,13 +88,15 @@ function _definestopee()
     Z = parse(Int, readline())
     println("What is the particle energy [MeV]?")
     E = parse(Float64, readline())
-    stopee = Particle(A, Z, E * 1.0u"MeV")
+    println("\nStopee Defined:")
+    global stopee = Particle(A, Z, E * 1.0u"MeV")
 end
 
 function _run()
-
+    lost = desorb!(stopee, sandwich)
+    _printresults(lost)
 end
 
 function _findthickness()
-
+    println("Find stopping thickness for stopee")
 end
