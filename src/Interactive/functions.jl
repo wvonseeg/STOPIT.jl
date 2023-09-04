@@ -93,7 +93,7 @@ function _definestopee()
 end
 
 function _run()
-    lost = desorb!(stopee, sandwich)
+    lost = desorb(stopee, sandwich)
     _printresults(lost)
 end
 
