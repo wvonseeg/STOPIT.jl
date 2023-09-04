@@ -1,20 +1,43 @@
-export desorb!, dedx, ads, ads!
+export desorb!, desorb, dedx, ads, stoppingenergy, stoppingdepth
 
-function desorb!(lostenergy::Vector{typeof(1.0u"MeV")}, stopee::Particle, sandwich::Sandwich; option::Integer=1, integrationsteps::Integer=1000, precision::Float64=1E-4)
-    @argcheck 0 < option <= 6
+function desorb!(lostenergy::Vector{typeof(1.0u"MeV")}, stopee::Particle, sandwich::Sandwich;
+    integrationsteps::Integer=1000, precision::Float64=1E-4, inplace=false)
+
+    tmpstopee = stopee
 
     @inbounds for i = eachindex(sandwich.layers)
-        lostenergy[i] = ads!(stopee, sandwich.layers[i], integrationsteps, precision)
+        try
+            lostenergy[i] = ads(tmpstopee, sandwich.layers[i], integrationsteps, precision)
+        catch err
+            if isa(err, ParticleStoppedException)
+                lostenergy[i] = tmpstopee.energy
+                for j in i:length(sandwich.layers)
+                    lostenergy[i] = 0.0u"MeV"
+                end
+                tmpstopee = setenergy(tmpstopee, tmpstopee.energy - lostenergy[i])
+                break
+            else
+                rethrow
+            end
+        end
+        tmpstopee = setenergy(tmpstopee, tmpstopee.energy - lostenergy[i])
+    end
+
+    if inplace
+        stopee = tmpstopee
     end
     return lostenergy
 end
 
-function desorb!(stopee::Particle, sandwich::Sandwich; option::Integer=1, integrationsteps::Integer=1000, precision::Float64=1e-4)
+function desorb(stopee::Particle, sandwich::Sandwich;
+    integrationsteps::Integer=1000, precision::Float64=1e-4)
     lostenergy = Vector{typeof(1.0u"MeV")}(undef, length(sandwich.layers))
-    desorb!(lostenergy, stopee, sandwich; option=option, integrationsteps=integrationsteps, precision=precision)
+    desorb!(lostenergy, stopee, sandwich; integrationsteps=integrationsteps, precision=precision)
     return lostenergy
 end
 
+#=
+ORIGINAL FORTRAN CODE TRANSLATION
 function desorb(ianz, zp, ap, ep, loste)
 
     # **  CALCULATES ENERGY LOSS IN AN ABSORBER SANDWICH *******
@@ -488,6 +511,7 @@ function desorb(ianz, zp, ap, ep, loste)
     # 2000	CONTINUE
     return
 end
+=#
 
 function stoppingenergy(A::Integer, Z::Integer, sandwich::Sandwich;
     initialenergy::Unitful.Energy=100.0u"MeV", integrationsteps::Integer=1000,
@@ -662,13 +686,6 @@ function ads(part::Particle, layer::T, steps::Integer, precision::Float64) where
     end
 
     return δEₜ
-end
-
-function ads!(part::Particle, layer::T, steps::Integer, precision::Float64) where {T<:AbstractAbsorber}
-    # NEED TO FIX HOW THIS CATCHES PARTICLE STOPS EXCEPTION
-    lostenergy = ads(part, layer, steps, precision)
-    part = Particle(part.Z, part.A, part.mass, part.energy - lostenergy)
-    return lostenergy
 end
 
 function _dedxloop!(Eᵢ::typeof(1.0u"MeV"), index::Integer, steps::Integer, layer::T, part::Particle) where {T<:AbstractAbsorber}
