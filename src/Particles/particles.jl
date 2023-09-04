@@ -31,5 +31,9 @@ function Base.show(io::IO, ::MIME"text/plain", x::Particle)
     println("$(x.A)$(x.symbol) ($(x.mass)) @ $(x.energy)")
 end
 
+function setenergy(part::Particle, energy::typeof(1.0u"MeV"))
+    return Particle(part.A, part.mass, part.Z, energy, part.symbol)
+end
+
 include("reactions.jl")
 end # module Particles
