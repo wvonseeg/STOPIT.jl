@@ -11,8 +11,8 @@ function desorb!(lostenergy::Vector{typeof(1.0u"MeV")}, stopee::Particle, sandwi
         catch err
             if isa(err, ParticleStoppedException)
                 lostenergy[i] = tmpstopee.energy
-                for j in i:length(sandwich.layers)
-                    lostenergy[i] = 0.0u"MeV"
+                for j in i+1:length(sandwich.layers)
+                    lostenergy[j] = 0.0u"MeV"
                 end
                 tmpstopee = setenergy(tmpstopee, tmpstopee.energy - lostenergy[i])
                 break
