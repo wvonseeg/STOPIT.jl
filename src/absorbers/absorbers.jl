@@ -1,6 +1,6 @@
 module Absorbers
 using NaturallyUnitful, ArgCheck
-import ..STOPIT: getmass
+import ..STOPIT: getmass, atomicsymbols
 export AbstractAbsorber,
     SolidAbsorber,
     GasAbsorber,

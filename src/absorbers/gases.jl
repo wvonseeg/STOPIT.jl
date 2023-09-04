@@ -12,6 +12,7 @@ struct GasAbsorber <: AbstractAbsorber
     mass::Tuple{typeof(1.0u"u")}
     Z::Tuple{UInt8}
     num::Tuple{UInt8}
+    symbols::Tuple{String}
     thickness::typeof(1.0u"mg/cm^2")
     partialthickness::Tuple{typeof(1.0u"mg/cm^2")}
     density::typeof(1.0u"g/cm^3")
@@ -48,6 +49,8 @@ function GasAbsorber(A::Vector{<:Integer}, Z::Vector{<:Integer}, num::Vector{<:I
     # AW = 0.0
     thickness = 0.0u"mg/cm^2"
     density = 0.0u"g/cm^3"
+
+    syms = Vector{String}(undef, len)
     @inbounds for i = 1:len
         # AW += A[i] * AN[i]
         # AWW += A[i] * AN[i] * CN[i]
@@ -55,12 +58,14 @@ function GasAbsorber(A::Vector{<:Integer}, Z::Vector{<:Integer}, num::Vector{<:I
         thickness += thick[i]
         dens[i] = thick[i] / depth
         density += dens[i]
+        syms[i] = atomicsymbols[Z[i]+1]
     end
     massmatrix = getmass(A, Z)
     GasAbsorber(tuple(A...), tuple(massmatrix[:, 1]...),
         tuple(convert(Vector{UInt8}, Z)...),
-        tuple(convert(Vector{UInt8}, num)...), thickness, tuple(thick...),
-        density, tuple(dens...), tuple(concentrations...), pressure, depth)
+        tuple(convert(Vector{UInt8}, num)...), tuple(syms...),
+        thickness, tuple(thick...), density, tuple(dens...),
+        tuple(concentrations...), pressure, depth)
 end
 
 function GasAbsorber(A::Vector{<:Real}, Z::Vector{<:Real}, num::Vector{<:Real}, concentrations::Vector{Real}, pressure::Real, depth::Real)
@@ -75,4 +80,13 @@ end
 function GasAbsorber(A::Vector{<:Real}, Z::Vector{<:Real}, num::Vector{<:Real}, pressure::Real, depth::Real)
     concentrations = ones(length(A))
     GasAbsorber(A, Z, num, concentrations, pressure, depth)
+end
+
+function Base.show(io::IO, ::MIME"text/plain", x::GasAbsorber)
+    println("Gaseous Absorber")
+    println("Pressure: $(x.pressure)\tDepth: $(x.depth)")
+    for (i, sym) in enumerate(x.symbols)
+        print(x.num[i])
+        println("\t$(x.A[i])$sym")
+    end
 end
