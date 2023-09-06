@@ -576,7 +576,7 @@ function stoppingdepth(stopee::Particle, layer::GasAbsorber; integrationsteps::I
 end
 
 function stoppingdepth(stopee::Particle, layer::SolidAbsorber; integrationsteps::Integer=1000,
-    precision::Float64=1e-4, atol::Real=1e-3)
+    precision::Float64=1e-4, atol::Real=1e-3, maxiterations=1e5)
     atol *= 1.0u"MeV"
     stopped = false
     iterations = 1
@@ -584,12 +584,28 @@ function stoppingdepth(stopee::Particle, layer::SolidAbsorber; integrationsteps:
 
     # Start with naive guess of particle energy divided by stopping power
     thickness = 0.0u"mg/cm^2"
+    dthickness = 0.0u"mg/cm^2"
     @inbounds for i in eachindex(layer.A)
-        thickness = stopee.energy / dedx(stopee.energy, i, layer, stopee)
+        thickness += stopee.energy / dedx(stopee.energy, i, layer, stopee)
     end
 
     while !stopped
         try
+            ΔE = stopee.energy - ads(stopee, layer, integrationsteps, precision)
+            if isapprox(ΔE, 0.0u"MeV"; atol=atol)
+                # If particle stops within precision then we're good
+                return thickness
+            else
+                # If not determine change in thickness 
+                @inbounds for i in eachindex(layer.A)
+                    dthickness += ΔE / dedx(ΔE, i, layer, stopee)
+                end
+                # Adjust thickness and prepare for next iteration
+                thickness += dthickness
+                tmplayer = setthickness(tmplayer, thickness)
+                dthickness = 0.0u"mg/cm^2"
+                iterations += 1
+            end
 
         catch err
             if isa(err, ParticleStoppedException)
@@ -608,7 +624,7 @@ end
 function dedx(energy::Unitful.Energy, index::Integer, layer::AbstractAbsorber, part::Particle)
     δEδx = 0.0u"MeV*cm^2/mg"
 
-    vel = _velocity(part)
+    vel = _velocity(part.mass, energy)
     XI = vel^2 / layer.Z[index]
     AZ1 = log(1.035 - 0.4 * exp(-0.16 * part.Z))
     VZ1 = (-116.79 - 3350.4 * vel * part.Z^(-0.509)) * vel * part.Z^(-0.509)
