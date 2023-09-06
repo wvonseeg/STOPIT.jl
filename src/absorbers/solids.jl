@@ -6,15 +6,15 @@ The units of fields are as follows:
 * Density   => g cm^-3
 """
 struct SolidAbsorber <: AbstractAbsorber
-    A::Tuple{UInt16}
-    mass::Tuple{typeof(1.0u"u")}
-    Z::Tuple{UInt8}
-    num::Tuple{UInt8}
-    symbols::Tuple{String}
+    A::Array{UInt16,1}
+    mass::Array{typeof(1.0u"u"),1}
+    Z::Array{UInt8,1}
+    num::Array{UInt8,1}
+    symbols::Array{String,1}
     thickness::typeof(1.0u"mg/cm^2")
-    partialthickness::Tuple{typeof(1.0u"mg/cm^2")}
+    partialthickness::Array{typeof(1.0u"mg/cm^2"),1}
     density::typeof(1.0u"g/cm^3")
-    partialdensity::Tuple{typeof(1.0u"g/cm^3")}
+    partialdensity::Array{typeof(1.0u"g/cm^3"),1}
 end
 
 #################################
@@ -33,25 +33,22 @@ function SolidAbsorber(A::Vector{<:Integer}, Z::Vector{<:Integer}, num::Vector{<
     #thickness = uconvert(u"mg/cm^2", thickness)
     density = uconvert(u"g/cm^3", density)
 
-    ANout = zeros(len)
     Tout = zeros(typeof(1.0u"mg/cm^2"), len)
     Dout = zeros(typeof(1.0u"g/cm^3"), len)
 
     syms = Vector{String}(undef, len)
 
     @inbounds for (i, N) in enumerate(num)
-        ANout[i] = A[i] * N
         Tout[i] = thickness * N
         Dout[i] = density * N
         syms[i] = atomicsymbols[Z[i]+1]
     end
 
-    ANout ./= sum(ANout)
+    Tout ./= sum(num)
+    Dout ./= sum(num)
+
     massmatrix = getmass(A, Z)
-    SolidAbsorber(tuple(A...), tuple(massmatrix[:, 1]...),
-        tuple(convert(Vector{UInt8}, Z)...),
-        tuple(convert(Vector{UInt8}, ANout)...), tuple(syms...),
-        thickness, tuple(Tout...), density, tuple(Dout...))
+    SolidAbsorber(A, massmatrix[:, 1], Z, num, syms, thickness, Tout, density, Dout)
 end
 
 function SolidAbsorber(A::Vector{<:Integer}, Z::Vector{<:Integer}, num::Vector{<:Integer}, depth::Unitful.Length, density::Unitful.Density)
@@ -70,4 +67,14 @@ function Base.show(io::IO, ::MIME"text/plain", x::SolidAbsorber)
     for (i, sym) in enumerate(x.symbols)
         println("$(x.num[i])\t$(x.A[i])$sym")
     end
+end
+
+function setthickness(absorb::SolidAbsorber, thickness::typeof(1.0u"mg/cm^2"))
+    pthick = Vector{typeof(1.0u"mg/cm^2")}(undef, length(absorb.partialthickness))
+    for (i, N) in enumerate(absorb.num)
+        pthick[i] = absorb.thickness * N
+    end
+    pthick ./= sum(num)
+    return SolidAbsorber(absorb.A, absorb.mass, absorb.Z, absorb.num,
+        absorb.symbols, thickness, pthick, absorb.density, absorb.partialdensity)
 end

@@ -521,8 +521,9 @@ function stoppingenergy(A::Integer, Z::Integer, sandwich::Sandwich;
     stopped = false
     Eloss = 0.0u"MeV"
 
+    stopee = Particle(A, Z, energy)
+
     while !stopped
-        stopee = Particle(A, Z, energy)
         try
             @inbounds for layer in sandwich.layers
                 Eloss += ads(stopee, layer, integrationsteps, precision)
@@ -534,6 +535,7 @@ function stoppingenergy(A::Integer, Z::Integer, sandwich::Sandwich;
             # Reset variables and lower energy
             energy -= ΔE
             Eloss = 0.0u"MeV"
+            stopee = setenergy(stopee, energy)
         catch err
             if isa(err, ParticleStoppedException)
                 # If the particle stopped need to increase the energy and try again
@@ -546,8 +548,61 @@ function stoppingenergy(A::Integer, Z::Integer, sandwich::Sandwich;
     end
 end
 
-function stoppingdepth(stopee::Particle, layer::T; integrationsteps::Integer=1000, precision::Float64=1e-4) where {T<:AbstractAbsorber}
+function stoppingdepth(stopee::Particle, layer::GasAbsorber; integrationsteps::Integer=1000,
+    precision::Float64=1e-4, atol::Real=1e-3, increasepressure::Bool=true)
+    atol *= 1.0u"MeV"
+    stopped = false
+    iterations = 1
 
+    # Start with naive guess of particle energy divided by stopping power
+    initialthickness = 0.0u"mg/cm^2"
+    @inbounds for i in eachindex(layer.A)
+        initialthickness = stopee.energy / dedx(stopee.energy, i, layer, stopee)
+    end
+
+    while !stopped
+        try
+
+        catch err
+            if isa(err, ParticleStoppedException)
+                if iterations == 1
+
+                end
+            else
+                rethrow()
+            end
+        end
+    end
+end
+
+function stoppingdepth(stopee::Particle, layer::SolidAbsorber; integrationsteps::Integer=1000,
+    precision::Float64=1e-4, atol::Real=1e-3)
+    atol *= 1.0u"MeV"
+    stopped = false
+    iterations = 1
+    tmplayer = layer
+
+    # Start with naive guess of particle energy divided by stopping power
+    thickness = 0.0u"mg/cm^2"
+    @inbounds for i in eachindex(layer.A)
+        thickness = stopee.energy / dedx(stopee.energy, i, layer, stopee)
+    end
+
+    while !stopped
+        try
+
+        catch err
+            if isa(err, ParticleStoppedException)
+                if iterations == 1
+                    # If particle stops on first iteration greatly decrease thickness
+                    thickness /= 10
+                    tmplayer = setthickness(tmplayer, thickness)
+                end
+            else
+                rethrow()
+            end
+        end
+    end
 end
 
 function dedx(energy::Unitful.Energy, index::Integer, layer::AbstractAbsorber, part::Particle)

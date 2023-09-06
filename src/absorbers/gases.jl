@@ -8,16 +8,16 @@ The units of fields are as follows:
 * Depth     => cm
 """
 struct GasAbsorber <: AbstractAbsorber
-    A::Tuple{UInt16}
-    mass::Tuple{typeof(1.0u"u")}
-    Z::Tuple{UInt8}
-    num::Tuple{UInt8}
-    symbols::Tuple{String}
+    A::Array{UInt16,1}
+    mass::Array{typeof(1.0u"u"),1}
+    Z::Array{UInt8,1}
+    num::Array{UInt8,1}
+    symbols::Array{String,1}
     thickness::typeof(1.0u"mg/cm^2")
-    partialthickness::Tuple{typeof(1.0u"mg/cm^2")}
+    partialthickness::Array{typeof(1.0u"mg/cm^2"),1}
     density::typeof(1.0u"g/cm^3")
-    partialdensity::Tuple{typeof(1.0u"g/cm^3")}
-    concentrations::Tuple{Float64}
+    partialdensity::Array{typeof(1.0u"g/cm^3"),1}
+    concentrations::Array{Float64,1}
     pressure::typeof(1.0u"Torr")
     depth::typeof(1.0u"cm")
 end
@@ -60,12 +60,13 @@ function GasAbsorber(A::Vector{<:Integer}, Z::Vector{<:Integer}, num::Vector{<:I
         density += dens[i]
         syms[i] = atomicsymbols[Z[i]+1]
     end
+
+    thick ./= sum(num)
+    dens ./= sum(num)
+
     massmatrix = getmass(A, Z)
-    GasAbsorber(tuple(A...), tuple(massmatrix[:, 1]...),
-        tuple(convert(Vector{UInt8}, Z)...),
-        tuple(convert(Vector{UInt8}, num)...), tuple(syms...),
-        thickness, tuple(thick...), density, tuple(dens...),
-        tuple(concentrations...), pressure, depth)
+    GasAbsorber(A, massmatrix[:, 1], Z, num, syms, thickness, thick,
+        density, dens, concentrations, pressure, depth)
 end
 
 function GasAbsorber(A::Vector{<:Real}, Z::Vector{<:Real}, num::Vector{<:Real}, concentrations::Vector{Real}, pressure::Real, depth::Real)
