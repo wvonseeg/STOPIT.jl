@@ -766,9 +766,6 @@ function _dedxloop!(Eᵢ::typeof(1.0u"MeV"), index::Integer, steps::Integer, lay
         δEδx = dedx(Eᵢ, j, layer, part)
         if Eᵢ - δEδx * thickstep < 0.0u"MeV"
             if index <= 2
-                steps *= 2
-                index = 1
-                Eᵢ = part.energy
                 throw(ZeroEnergyException())
             else
                 throw(ParticleStoppedException())
