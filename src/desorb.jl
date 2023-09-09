@@ -515,11 +515,13 @@ end
 
 function stoppingenergy(A::Integer, Z::Integer, sandwich::Sandwich;
     initialenergy::Unitful.Energy=100.0u"MeV", integrationsteps::Integer=1000,
-    precision::Float64=1e-4, atol::Real=1e-3)
-    energy = uconvert(1.0u"MeV", initialenergy)
+    precision::Float64=1e-4, atol::Real=1e-3, maxiterations::Integer=100000)
+    energy = uconvert(u"MeV", initialenergy)
     atol *= 1.0u"MeV"
     stopped = false
     Eloss = 0.0u"MeV"
+    ΔE = 0.0u"MeV"
+    iterations = 1
 
     stopee = Particle(A, Z, energy)
 
@@ -533,14 +535,24 @@ function stoppingenergy(A::Integer, Z::Integer, sandwich::Sandwich;
                 return energy
             end
             # Reset variables and lower energy
+            ΔE /= 2
             energy -= ΔE
             Eloss = 0.0u"MeV"
             stopee = setenergy(stopee, energy)
+            iterations += 1
         catch err
             if isa(err, ParticleStoppedException)
-                # If the particle stopped need to increase the energy and try again
-                energy *= 2
-                Eloss = 0.0u"MeV"
+                if iterations == 1
+                    # If the particle stopped need to increase the energy and try again
+                    energy *= 2
+                    Eloss = 0.0u"MeV"
+                else
+                    ΔE /= 2
+                    energy += ΔE
+                    Eloss = 0.0u"MeV"
+                    stopee = setenergy(stopee, energy)
+                    iterations += 1
+                end
             else
                 rethrow()
             end

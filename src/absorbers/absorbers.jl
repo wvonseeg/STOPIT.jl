@@ -15,8 +15,8 @@ Abstract type for absorber layers.
 """
 abstract type AbstractAbsorber end
 
-mutable struct Sandwich
-    layers::Vector{<:AbstractAbsorber}
+mutable struct Sandwich{T<:Vector{<:AbstractAbsorber}}
+    layers::T
 end
 
 function Sandwich()

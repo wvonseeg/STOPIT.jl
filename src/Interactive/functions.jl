@@ -6,25 +6,29 @@ function _editabsorber()
         println("Layer $index does not exist")
         return
     end
-    # FINISH THIS METHOD
+    _definelayer(index)
 end
 
 function _defineabsorber()
     println("How many layers in the absorber?")
     numlayers = parse(Int, readline())
     for i in 1:numlayers
-        println("##### Layer $i #####\n")
-        println("1: Solid")
-        println("2: Gas")
-        println("3: Standard medium")
-        med = parse(Int, readline())
-        if med == 1
-            _solidmedium(layernum)
-        elseif med == 2
-            _gaseousmedium(layernum)
-        elseif med == 3
-            _standardmedium()
-        end
+        _definelayer(i)
+    end
+end
+
+function _definelayer(layernum::Integer)
+    println("##### Layer $layernum #####\n")
+    println("1: Solid")
+    println("2: Gas")
+    println("3: Standard medium")
+    med = parse(Int, readline())
+    if med == 1
+        _solidmedium(layernum)
+    elseif med == 2
+        _gaseousmedium(layernum)
+    elseif med == 3
+        _standardmedium(layernum)
     end
 end
 
@@ -44,7 +48,7 @@ function _solidmedium(layernum::Integer)
         num[j] = parse(Int, readline())
     end
     usrlayer = SolidAbsorber(A, Z, num, thick, dens)
-    setlayer!(sandwich, usrlayer)
+    setlayer!(sandwich, layernum, usrlayer)
 end
 
 function _gaseousmedium(layernum::Integer)
@@ -63,10 +67,10 @@ function _gaseousmedium(layernum::Integer)
         num[j] = parse(Int, readline())
     end
     usrlayer = GasAbsorber(A, Z, num, pres, dep)
-    setlayer!(sandwich, usrlayer)
+    setlayer!(sandwich, layernum, usrlayer)
 end
 
-function _standardmedium()
+function _standardmedium(layernum::Integer)
     _printstandardmedia()
     medium = parse(Int, readline())
     pressure = 0.0u"Torr"
@@ -78,7 +82,7 @@ function _standardmedium()
     println("Depth [cm]?")
     depth = 1.0u"cm" * parse(Float64, readline())
     usrlayer = getstandardmedium(Absorbers.STANDARDMEDIA[medium]; pressure=pressure, depth=depth)
-    setlayer!(sandwich, usrlayer)
+    setlayer!(sandwich, layernum, usrlayer)
 end
 
 function _definestopee()
@@ -89,7 +93,16 @@ function _definestopee()
     println("What is the particle energy [MeV]?")
     E = parse(Float64, readline())
     println("\nStopee Defined:")
-    global stopee = Particle(A, Z, E * 1.0u"MeV")
+    try
+        global stopee = Particle(A, Z, E * 1.0u"MeV")
+    catch err
+        if isa(err, MassNotFoundException)
+            println("The requested particle ($A$(STOPIT.atomicsymbols[Z+1])) does not exist.")
+            println("Stopee not defined!")
+        else
+            rethrow()
+        end
+    end
 end
 
 function _run()
